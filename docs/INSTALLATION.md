@@ -14,8 +14,8 @@ Installer le projet, vérifier la chaîne de rendu et produire un premier rendu 
 
 ## 01 · Pré-requis
 
-Deux dépendances seulement, dont une hors Python. Rien n'est requis pour la conversion
-d'images : FFmpeg ne sert qu'à la vidéo et à la caméra.
+Deux paquets Python, installés automatiquement, et un outil externe. Rien d'externe n'est requis
+pour la conversion d'images : FFmpeg ne sert qu'à la vidéo et à la caméra.
 
 | Composant | Rôle |
 | --- | --- |
@@ -66,9 +66,9 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
 
-Le chemin du projet contient un espace et des parenthèses : garde-le **entre guillemets** dans
-toutes les commandes. Les guillemets autour de `".[dev]"` sont nécessaires aussi — PowerShell
-interprète les crochets nus.
+Les guillemets autour de `".[dev]"` sont nécessaires : PowerShell interprète les crochets nus. Si
+le chemin de ton projet contient un espace ou des parenthèses, garde-le **entre guillemets** dans
+toutes les commandes.
 
 | Élément | Rôle |
 | --- | --- |
@@ -110,7 +110,7 @@ tty stdout    True
 codec stdout  utf-8
 ```
 
-Les quatre dernières lignes décrivent le terminal, pas le projet, et expliquent la plupart des
+Les cinq dernières lignes décrivent le terminal, pas le projet, et expliquent la plupart des
 surprises de rendu :
 
 | Ligne | Ce qu'elle contrôle |
@@ -124,8 +124,8 @@ surprises de rendu :
 > sortie va vers un vrai terminal ou vers un fichier. Redirigée, la détection renvoie `False` et
 > `none` — c'est le comportement attendu, pas une panne.
 
-Enfin, `hachure list` énumère les renderers disponibles : trois entrées (image, video, camera) et
-cinq démos procédurales.
+Enfin, `hachure list` énumère les moteurs de rendu disponibles : trois entrées (image, video,
+camera) et cinq démos procédurales.
 
 ---
 
@@ -190,7 +190,7 @@ Réglages · video
 › Contours (--edges)   oui
   Jeu de caractères    detailed
   Durée en secondes    30
-  Enregistrer le rendu concert.mp4
+  Enregistrer le rendu concert-20260916-205412.mp4
 
   Lancer le rendu
   Annuler
@@ -288,9 +288,9 @@ rendus sont comparés sur de petits tableaux NumPy construits à la main.
 
 ```text
 > python -m unittest discover -s tests
-....................................................................
-----------------------------------------------------------
-Ran 197 tests in 1.037s
+.....................................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 197 tests in 0.377s
 
 OK
 ```
@@ -382,7 +382,8 @@ pixels — c'est la seule option qui alourdit le décodage et pas seulement le r
 
 ## 07 · Options clés
 
-Les réglages qui changent vraiment le résultat, partagés par `image`, `video` et `camera`.
+Les réglages qui changent vraiment le résultat. Tous valent pour `image`, `video` et `camera`,
+sauf `--smoothing`, qui n'a de sens que sur un flux et n'existe donc que pour `video` et `camera`.
 
 | Option | Défaut | Effet |
 | --- | --- | --- |
@@ -393,7 +394,7 @@ Les réglages qui changent vraiment le résultat, partagés par `image`, `video`
 | `--fit` | `contain` | `cover` recadre la source à la forme du terminal au lieu de la laisser en bandes. |
 | `--gamma` | `1.0` | Reprofile les tons moyens : au-dessus de 1 éclaircit. Sur une source couleur, appliqué en gain sur les trois canaux, ce qui préserve la teinte. |
 | `--quant` | `4` | Pas de quantification couleur. Plus il est grand, plus les séquences d'échappement sont rares — le levier principal sur un terminal lent. |
-| `--smoothing` | `1.0` | Fondu temporel entre trames. 1 est net ; descendre vers 0,35 laisse des traînées de mouvement. |
+| `--smoothing` | `1.0` | *(`video` et `camera` seulement)* Fondu temporel entre trames. 1 est net ; descendre vers 0,35 laisse des traînées de mouvement. |
 
 ### La combinaison à retenir
 

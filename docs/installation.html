@@ -519,8 +519,9 @@
       <!-- 01 -->
       <section id="prerequis">
         <div class="sec-head"><span class="sec-num">01</span><h2>Pré-requis</h2></div>
-        <p>Deux dépendances seulement, dont une hors Python. Rien n'est requis pour la
-          conversion d'images : FFmpeg ne sert qu'à la vidéo et à la caméra.</p>
+        <p>Deux paquets Python, installés automatiquement, et un outil externe. Rien d'externe
+          n'est requis pour la conversion d'images : FFmpeg ne sert qu'à la vidéo et à la
+          caméra.</p>
 
         <dl class="reqs">
           <div class="req">
@@ -598,9 +599,9 @@
 <span class="p">$</span> python -m pip install -e ".[dev]"</pre>
         </div>
 
-        <p>Le chemin du projet contient un espace et des parenthèses : garde-le
-          <strong>entre guillemets</strong> dans toutes les commandes. Les guillemets autour de
-          <code>".[dev]"</code> sont nécessaires aussi — PowerShell interprète les crochets nus.</p>
+        <p>Les guillemets autour de <code>".[dev]"</code> sont nécessaires : PowerShell
+          interprète les crochets nus. Si le chemin de ton projet contient un espace ou des
+          parenthèses, garde-le <strong>entre guillemets</strong> dans toutes les commandes.</p>
 
         <h3>Ce que fait chaque partie</h3>
         <div class="table-scroll">
@@ -655,7 +656,7 @@ tty stdout    True
 codec stdout  utf-8</span></pre>
         </div>
 
-        <p>Les quatre dernières lignes décrivent le terminal, pas le projet, et expliquent la
+        <p>Les cinq dernières lignes décrivent le terminal, pas le projet, et expliquent la
           plupart des surprises de rendu :</p>
 
         <div class="table-scroll">
@@ -678,7 +679,7 @@ codec stdout  utf-8</span></pre>
             panne.</p>
         </div>
 
-        <p>Enfin, <code>hachure list</code> énumère les renderers disponibles : trois entrées
+        <p>Enfin, <code>hachure list</code> énumère les moteurs de rendu disponibles : trois entrées
           (image, video, camera) et cinq démos procédurales.</p>
       </section>
 
@@ -749,7 +750,7 @@ C:\Users\moi\Videos
 › Contours (--edges)   oui
   Jeu de caractères    detailed
   Durée en secondes    30
-  Enregistrer le rendu concert.mp4
+  Enregistrer le rendu concert-20260916-205412.mp4
 
   Lancer le rendu
   Annuler
@@ -852,9 +853,9 @@ hachure … --width 160 --fit cover --edges --charset detailed --duration 30 …
         <div class="shell">
           <div class="shell-bar"><span>Sortie réelle de ce poste</span></div>
           <pre><span class="p">PS&gt;</span> python -m unittest discover -s tests
-<span class="o">....................................................................
-----------------------------------------------------------
-Ran 197 tests in 1.037s
+<span class="o">.....................................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 197 tests in 0.377s
 
 OK</span></pre>
         </div>
@@ -960,8 +961,9 @@ OK</span></pre>
       <!-- 07 -->
       <section id="reference">
         <div class="sec-head"><span class="sec-num">07</span><h2>Options clés</h2></div>
-        <p>Les réglages qui changent vraiment le résultat, partagés par <code>image</code>,
-          <code>video</code> et <code>camera</code>.</p>
+        <p>Les réglages qui changent vraiment le résultat. Tous valent pour <code>image</code>,
+          <code>video</code> et <code>camera</code>, sauf <code>--smoothing</code>, qui n'a de sens
+          que sur un flux et n'existe donc que pour <code>video</code> et <code>camera</code>.</p>
 
         <div class="table-scroll">
           <table>

@@ -505,8 +505,33 @@ exceptions, marquées par un commentaire à leur emplacement : les sous-chaînes
 de FFmpeg, et les messages internes d'argparse et d'unittest, qui passent par gettext sans catalogue
 français dans CPython.
 
-L'architecture est décrite dans [`CLAUDE.md`](CLAUDE.md) : tout converge vers `render.py`, qui est
-le seul point de conversion entre pixels et texte.
+### Architecture
+
+Tout converge vers un point de conversion unique. Deux familles de sources — pixels décodés,
+géométrie procédurale — et trois sorties — terminal, fichier texte, vidéo enregistrée — se
+rejoignent dans `render.py`.
+
+```text
+media/image.py (Pillow) ─┐
+media/video.py (FFmpeg) ─┼→ tableau NumPy → tone.py → edges.py → render.py → texte ANSI ─┬→ terminal.py
+renderers/*.py ──────────┘   (les démos émettent du texte directement)        color.py   └→ export.py
+```
+
+| Module | Rôle |
+| --- | --- |
+| `render.py` | Le pivot. `RenderStyle` porte rampe, mode de cellule, profondeur de couleur, quantification et contours. Ses `pixel_cols()`/`pixel_rows()` disent au décodeur *en amont* combien de pixels réclame une grille de caractères. La sortie est bâtie en plages compressées par ligne, jamais cellule par cellule — et une plage ne franchit jamais une frontière de ligne, pour que chaque ligne reste redessinable seule. |
+| `edges.py` | Suréchantillonne 3× par côté de cellule et choisit `-`, `\`, `\|` ou `/` via un tenseur de structure. Les glyphes de contour sont rangés après la fin de la rampe, si bien que l'aval indexe un alphabet unique sans cas particulier. |
+| `tone.py` | Niveaux automatiques et gamma. À état entre les images : `reset()` sur un saut ou un redémarrage de boucle. |
+| `color.py` | Mémoïse les préfixes ANSI, indexés par RVB compacté. Détecte la profondeur via `NO_COLOR`, `COLORTERM`, `TERM`. |
+| `terminal.py` | Dimensionnement et boucle d'animation. `Screen.draw()` ne repeint que les lignes modifiées. `terminal_session()` garantit la restauration du curseur et des couleurs. |
+| `media/video.py` | Construit la commande FFmpeg, lit des images brutes de taille fixe, suit un calendrier à l'horloge murale. L'audio est un processus FFplay distinct. |
+| `renderers/` | Démos autonomes enregistrées dans un dictionnaire `DEMOS`. Ajouter une démo = un module plus une entrée. |
+| `export.py` | Réanalyse les codes ANSI reçus et les repeint avec une police à chasse fixe, vers FFmpeg. |
+| `menu.py` | Le menu. Ne duplique aucune option : il compose une liste d'arguments et la passe à `main()`. |
+| `cli.py` | Argparse seulement. Les groupes d'options sont partagés entre sous-commandes. |
+
+NumPy et Pillow sont importés paresseusement, et les fonctions manipulant des tableaux reçoivent
+`np` en paramètre explicite plutôt que de l'importer au niveau du module.
 
 ---
 
