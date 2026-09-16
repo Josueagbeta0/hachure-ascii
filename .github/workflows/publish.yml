@@ -32,8 +32,8 @@ jobs:
 
       - name: Verify CLI
         run: |
-          ascii-art --version
-          ascii-art list
+          hachure --version
+          hachure list
 
   build:
     name: Build package
@@ -50,7 +50,7 @@ jobs:
       - name: Verify release version
         run: >
           python -c "import os;
-          from terminal_ascii_art import __version__ as version;
+          from hachure import __version__ as version;
           tag = os.environ['GITHUB_REF_NAME'].removeprefix('v');
           assert version == tag, f'Package version {version} does not match tag {tag}'"
 
@@ -77,7 +77,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/p/terminal-ascii-art
+      url: https://pypi.org/p/hachure
 
     permissions:
       id-token: write

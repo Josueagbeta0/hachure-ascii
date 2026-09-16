@@ -30,6 +30,7 @@ VideoExamples/
 
 assets/videos/*
 !assets/videos/.gitkeep
+videos/
 
 # ============================================================
 # Local images
@@ -44,6 +45,7 @@ assets/images/*
 
 output/
 renders/
+out/
 
 # ============================================================
 # Generated screenshots
@@ -59,3 +61,10 @@ Thumbs.db
 .DS_Store
 
 
+
+# ============================================================
+# Local scratch media
+# ============================================================
+
+test.mp4
+test.png

@@ -6,11 +6,11 @@ from pathlib import Path
 
 from PIL import Image
 
-from terminal_ascii_art.cli import main
+from hachure.cli import main
 
 
-class ImageCommandTests(unittest.TestCase):
-    def test_image_command_accepts_an_absolute_external_path(self) -> None:
+class CommandeImageTests(unittest.TestCase):
+    def test_la_commande_image_accepte_un_chemin_externe_absolu(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             temporary_directory = Path(directory)
             source = temporary_directory / "source image.png"
@@ -34,7 +34,7 @@ class ImageCommandTests(unittest.TestCase):
 
             self.assertEqual(result, 0)
             self.assertEqual(destination.read_text(encoding="utf-8"), "@@@@\n@@@@\n")
-            self.assertIn("Wrote 4 x 2 ASCII image", output.getvalue())
+            self.assertIn("Image ASCII 4 x 2 écrite", output.getvalue())
 
 
 if __name__ == "__main__":

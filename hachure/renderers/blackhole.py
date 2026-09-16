@@ -1,4 +1,4 @@
-"""Stylized black-hole and accretion-disk renderer."""
+"""Rendu stylisé d'un trou noir et de son disque d'accrétion."""
 
 import math
 import random

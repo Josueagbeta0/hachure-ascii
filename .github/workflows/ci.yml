@@ -13,6 +13,11 @@ jobs:
     name: Test on Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
 
+    env:
+      # La sortie du programme est en français : on garantit un stdout UTF-8
+      # quelle que soit la locale du runner.
+      PYTHONIOENCODING: utf-8
+
     strategy:
       fail-fast: false
       matrix:
@@ -26,12 +31,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install project
-        run: python -m pip install .
+        run: python -m pip install ".[dev]"
 
       - name: Run tests
         run: python -W error::DeprecationWarning -m unittest discover -s tests -v
 
       - name: Verify CLI
         run: |
-          ascii-art --version
-          ascii-art list
+          hachure --version
+          hachure list

@@ -1,4 +1,4 @@
-"""Parametric torus renderer."""
+"""Rendu d'un tore paramétrique."""
 
 import math
 

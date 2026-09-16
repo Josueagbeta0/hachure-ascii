@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: light dark; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<title>Mise en route de hachure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground: #FBFBFC;
+    --surface: #F0F1F4;
+    --surface-2: #E7E9ED;
+    --ink: #15171C;
+    --ink-soft: #33373F;
+    --muted: #5C6270;
+    --rule: #DEE0E5;
+    --rule-strong: #C6CAD2;
+    --accent: #B24F27;
+    --accent-soft: #F4E6DE;
+    --ok: #2D7A58;
+    --warn: #8F6309;
+    --crit: #AC2A20;
+    --code-ground: #F4F5F7;
+
+    --f-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+    --step-0: 0.75rem;
+    --step-1: 0.8125rem;
+    --step-2: 0.9375rem;
+    --step-3: 1.0625rem;
+    --step-4: 1.375rem;
+    --step-5: 1.875rem;
+    --step-6: 2.5rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0F1115;
+      --surface: #181B21;
+      --surface-2: #20242B;
+      --ink: #E7E9EC;
+      --ink-soft: #C5C9D1;
+      --muted: #979EAB;
+      --rule: #282C34;
+      --rule-strong: #3A3F49;
+      --accent: #E28158;
+      --accent-soft: #2C1F19;
+      --ok: #5FBF92;
+      --warn: #D9A83A;
+      --crit: #E8796D;
+      --code-ground: #14171C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0F1115;
+    --surface: #181B21;
+    --surface-2: #20242B;
+    --ink: #E7E9EC;
+    --ink-soft: #C5C9D1;
+    --muted: #979EAB;
+    --rule: #282C34;
+    --rule-strong: #3A3F49;
+    --accent: #E28158;
+    --accent-soft: #2C1F19;
+    --ok: #5FBF92;
+    --warn: #D9A83A;
+    --crit: #E8796D;
+    --code-ground: #14171C;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-sans);
+    font-size: var(--step-2);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 24px;
+    padding-block: 0 96px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    padding-block: 64px 40px;
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    gap: 28px;
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--step-0);
+    font-weight: 500;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h1 {
+    font-size: var(--step-6);
+    font-weight: 700;
+    letter-spacing: -0.028em;
+    line-height: 1.08;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: 0;
+    max-width: 62ch;
+    font-size: var(--step-3);
+    color: var(--ink-soft);
+  }
+
+  .masthead-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 44px;
+    align-items: start;
+  }
+
+  .sample {
+    background: var(--code-ground);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 18px 16px;
+    overflow-x: auto;
+  }
+
+  .sample pre {
+    margin: 0;
+    font-family: var(--f-mono);
+    font-size: 8.5px;
+    line-height: 1.16;
+    color: var(--ink-soft);
+    white-space: pre;
+  }
+
+  .sample figcaption {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--f-mono);
+    font-size: var(--step-0);
+    color: var(--muted);
+    white-space: normal;
+  }
+
+  /* ---------- body layout ---------- */
+
+  .body-grid {
+    display: grid;
+    grid-template-columns: 208px minmax(0, 1fr);
+    gap: 56px;
+    align-items: start;
+    padding-top: 44px;
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 28px;
+    display: grid;
+    gap: 3px;
+  }
+
+  nav.toc p {
+    font-family: var(--f-mono);
+    font-size: var(--step-0);
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  nav.toc a {
+    font-family: var(--f-mono);
+    font-size: var(--step-1);
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 0;
+    display: flex;
+    gap: 10px;
+    border-radius: 2px;
+  }
+
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  nav.toc a span { color: var(--rule-strong); }
+
+  main { display: grid; gap: 0; min-width: 0; }
+
+  /* ---------- sections ---------- */
+
+  section { padding-block: 40px; border-top: 1px solid var(--rule); }
+  section:first-child { border-top: none; padding-top: 4px; }
+
+  .sec-head { display: flex; gap: 14px; align-items: baseline; margin-bottom: 6px; }
+
+  .sec-num {
+    font-family: var(--f-mono);
+    font-size: var(--step-1);
+    font-weight: 500;
+    color: var(--accent);
+    flex: none;
+  }
+
+  h2 {
+    font-size: var(--step-5);
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-size: var(--step-3);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 32px 0 0;
+  }
+
+  h3:first-of-type { margin-top: 24px; }
+
+  p { margin: 12px 0 0; max-width: 68ch; }
+  p.tight { margin-top: 6px; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  strong { font-weight: 600; }
+
+  code {
+    font-family: var(--f-mono);
+    font-size: 0.885em;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 0.08em 0.32em;
+    word-break: break-word;
+  }
+
+  kbd {
+    font-family: var(--f-mono);
+    font-size: 0.8em;
+    background: var(--surface-2);
+    border: 1px solid var(--rule-strong);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    padding: 0.1em 0.4em;
+    color: var(--ink);
+  }
+
+  /* ---------- shell blocks ---------- */
+
+  .shell {
+    margin-top: 18px;
+    background: var(--code-ground);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .shell-bar {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 7px 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--f-mono);
+    font-size: var(--step-0);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .shell pre {
+    margin: 0;
+    padding: 14px;
+    overflow-x: auto;
+    font-family: var(--f-mono);
+    font-size: var(--step-1);
+    line-height: 1.75;
+    color: var(--ink-soft);
+  }
+
+  .shell pre .c { color: var(--muted); }
+  .shell pre .p { color: var(--accent); }
+  .shell pre .o { color: var(--ok); }
+
+  /* ---------- notes ---------- */
+
+  .note {
+    margin-top: 18px;
+    padding: 13px 16px;
+    background: var(--surface);
+    border-left: 2px solid var(--rule-strong);
+    border-radius: 0 2px 2px 0;
+    font-size: var(--step-1);
+    color: var(--ink-soft);
+  }
+
+  .note p { margin: 0; max-width: none; }
+  .note p + p { margin-top: 8px; }
+  .note.warn { border-left-color: var(--warn); }
+  .note.ok { border-left-color: var(--ok); }
+
+  .note-label {
+    font-family: var(--f-mono);
+    font-size: var(--step-0);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* ---------- requirement list ---------- */
+
+  .reqs { margin-top: 22px; display: grid; gap: 0; }
+
+  .req {
+    display: grid;
+    grid-template-columns: 168px minmax(0, 1fr);
+    gap: 20px;
+    padding: 14px 0;
+    border-top: 1px solid var(--rule);
+    align-items: baseline;
+  }
+
+  .req:last-child { border-bottom: 1px solid var(--rule); }
+
+  .req dt {
+    font-family: var(--f-mono);
+    font-size: var(--step-1);
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .req dd { margin: 0; font-size: var(--step-1); color: var(--ink-soft); }
+
+  .req dd em {
+    display: block;
+    margin-top: 3px;
+    font-style: normal;
+    color: var(--muted);
+    font-size: var(--step-0);
+  }
+
+  .status {
+    font-family: var(--f-mono);
+    font-size: var(--step-0);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 1px 6px;
+    border-radius: 2px;
+    white-space: nowrap;
+    border: 1px solid currentColor;
+  }
+
+  .status.ok { color: var(--ok); }
+
+  /* ---------- tables ---------- */
+
+  .table-scroll { margin-top: 20px; overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--step-1);
+    min-width: 460px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 11px 14px 11px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  th {
+    font-family: var(--f-mono);
+    font-size: var(--step-0);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom-color: var(--rule-strong);
+    white-space: nowrap;
+  }
+
+  td code { background: none; border: none; padding: 0; color: var(--accent); white-space: nowrap; }
+  td.sym { font-family: var(--f-mono); color: var(--ink); white-space: nowrap; }
+  td:last-child, th:last-child { padding-right: 0; }
+
+  /* ---------- ramp divider ---------- */
+
+  .ramp {
+    font-family: var(--f-mono);
+    font-size: var(--step-1);
+    letter-spacing: 0.22em;
+    color: var(--rule-strong);
+    margin: 0;
+    padding-block: 4px;
+    user-select: none;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* ---------- closing ---------- */
+
+  .closing {
+    margin-top: 44px;
+    padding: 26px 28px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+
+  .closing h2 { font-size: var(--step-4); }
+  .closing p { font-size: var(--step-1); }
+
+  @media (max-width: 900px) {
+    .masthead-grid { grid-template-columns: 1fr; gap: 32px; }
+    .body-grid { grid-template-columns: 1fr; gap: 0; padding-top: 32px; }
+    nav.toc { display: none; }
+  }
+
+  @media (max-width: 560px) {
+    .wrap { padding-inline: 18px; }
+    .masthead { padding-block: 44px 32px; }
+    h1 { font-size: var(--step-5); }
+    h2 { font-size: var(--step-4); }
+    .req { grid-template-columns: 1fr; gap: 5px; }
+    .sample pre { font-size: 6px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">hachure · v0.3.0</p>
+    </div>
+    <div class="masthead-grid">
+      <div>
+        <h1>Mise en route de hachure</h1>
+        <p class="lede">Installer le projet, vérifier la chaîne de rendu et produire ton premier
+          rendu en terminal — de l'environnement vierge à l'image animée. Les commandes ci-dessous
+          ont été exécutées sur ce poste ; les sorties affichées sont réelles.</p>
+      </div>
+      <figure class="sample">
+        <pre>                :!?c7777c?!;
+             !758BBBBBBBBBB857?:
+          :c8BB88888888888888BB87:
+         ?8B88888888888888888888B8c
+        7B8888888B85SSSS58B8888888B7
+       cB888888887!;:::::!788888888B7
+      :888888888!::::::::::!588888888;
+      !B888888Bc :::::::::: ?8888888B?
+      !B888888Bc :::::::::::?8888888B?
+      :888888888!::::::::::;588888888;
+       cB888888887!::::::;c88888888B7
+        7B8888888B85S77S58B8888888BS
+         ?8B888888888BB888888888B8c
+          :78B8888888888888888B87;
+            :?S58BBBBBBBBBB88S?:
+                ;!c77SS77c?;                </pre>
+        <figcaption>hachure image photo.png --width 44 --charset smooth</figcaption>
+      </figure>
+    </div>
+  </header>
+
+  <div class="body-grid">
+
+    <nav class="toc">
+      <p>Sommaire</p>
+      <a href="#prerequis"><span>01</span>Pré-requis</a>
+      <a href="#installation"><span>02</span>Installation</a>
+      <a href="#verification"><span>03</span>Vérification</a>
+      <a href="#rendus"><span>04</span>Premiers rendus</a>
+      <a href="#dev"><span>05</span>Développement</a>
+      <a href="#depannage"><span>06</span>Dépannage</a>
+      <a href="#reference"><span>07</span>Options clés</a>
+    </nav>
+
+    <main>
+
+      <!-- 01 -->
+      <section id="prerequis">
+        <div class="sec-head"><span class="sec-num">01</span><h2>Pré-requis</h2></div>
+        <p>Deux dépendances seulement, dont une hors Python. Rien n'est requis pour la
+          conversion d'images : FFmpeg ne sert qu'à la vidéo et à la caméra.</p>
+
+        <dl class="reqs">
+          <div class="req">
+            <dt>Python ≥ 3.10</dt>
+            <dd>La CI valide 3.10 et 3.14. NumPy et Pillow s'installent automatiquement.
+              <em>Ce poste : 3.11.9 <span class="status ok">OK</span></em></dd>
+          </div>
+          <div class="req">
+            <dt>ffmpeg</dt>
+            <dd>Décode la vidéo et la caméra en trames brutes envoyées sur <code>stdout</code>.
+              <em>Ce poste : 9.0.1-full (Gyan) <span class="status ok">OK</span></em></dd>
+          </div>
+          <div class="req">
+            <dt>ffprobe</dt>
+            <dd>Lit les dimensions et la rotation de la source, pour qu'une vidéo filmée
+              verticalement soit redressée plutôt qu'écrasée.
+              <em>Ce poste : 9.0.1-full <span class="status ok">OK</span></em></dd>
+          </div>
+          <div class="req">
+            <dt>ffplay</dt>
+            <dd>Lit la piste audio en parallèle du rendu. Facultatif : <code>--no-audio</code>
+              s'en passe.
+              <em>Ce poste : 9.0.1-full <span class="status ok">OK</span></em></dd>
+          </div>
+          <div class="req">
+            <dt>Police monospace</dt>
+            <dd>Doit contenir <code>▀</code> et <code>▄</code> pour le mode demi-bloc.
+              Cascadia Mono, Consolas, DejaVu Sans Mono et Menlo conviennent.</dd>
+          </div>
+          <div class="req">
+            <dt>Terminal truecolor</dt>
+            <dd>Windows Terminal, VS Code ou tout émulateur moderne, pour <code>--color</code>
+              en 24 bits. Sinon le rendu retombe en 256 couleurs ou en monochrome.</dd>
+          </div>
+        </dl>
+
+        <h3>Installer FFmpeg</h3>
+        <p class="tight">Les trois binaires viennent ensemble. Après l'installation, <strong>rouvre
+          le terminal</strong> pour que le <code>PATH</code> soit rechargé.</p>
+
+        <div class="shell">
+          <div class="shell-bar"><span>Windows · PowerShell</span></div>
+          <pre><span class="p">PS&gt;</span> winget install Gyan.FFmpeg
+
+<span class="c"># macOS</span>
+<span class="p">$</span> brew install ffmpeg
+
+<span class="c"># Debian / Ubuntu</span>
+<span class="p">$</span> sudo apt install ffmpeg</pre>
+        </div>
+      </section>
+
+      <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
+
+      <!-- 02 -->
+      <section id="installation">
+        <div class="sec-head"><span class="sec-num">02</span><h2>Installation</h2></div>
+        <p>Un environnement virtuel par projet, puis une installation éditable : le code reste
+          vivant, une modification d'un fichier source est prise en compte sans réinstaller.</p>
+
+        <div class="shell">
+          <div class="shell-bar"><span>Windows · PowerShell</span><span>depuis la racine du dépôt</span></div>
+          <pre><span class="p">PS&gt;</span> cd "C:\dev\hachure-ascii"
+<span class="p">PS&gt;</span> py -m venv .venv
+<span class="p">PS&gt;</span> .\.venv\Scripts\Activate.ps1
+<span class="p">PS&gt;</span> python -m pip install --upgrade pip
+<span class="p">PS&gt;</span> python -m pip install -e ".[dev]"</pre>
+        </div>
+
+        <div class="shell">
+          <div class="shell-bar"><span>macOS / Linux</span></div>
+          <pre><span class="p">$</span> cd hachure-ascii
+<span class="p">$</span> python3 -m venv .venv
+<span class="p">$</span> source .venv/bin/activate
+<span class="p">$</span> python -m pip install -e ".[dev]"</pre>
+        </div>
+
+        <p>Le chemin du projet contient un espace et des parenthèses : garde-le
+          <strong>entre guillemets</strong> dans toutes les commandes. Les guillemets autour de
+          <code>".[dev]"</code> sont nécessaires aussi — PowerShell interprète les crochets nus.</p>
+
+        <h3>Ce que fait chaque partie</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Élément</th><th>Rôle</th></tr></thead>
+            <tbody>
+              <tr><td class="sym">.venv</td><td>Isole numpy, Pillow et pytest du Python système. Le dossier est déjà ignoré par git.</td></tr>
+              <tr><td class="sym">-e</td><td>Installation éditable : le paquet pointe vers les sources au lieu d'en copier une version figée.</td></tr>
+              <tr><td class="sym">[dev]</td><td>Extra facultatif du <code>pyproject.toml</code> ; ajoute pytest. Sans lui, la suite de tests reste lançable via <code>unittest</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note warn">
+          <span class="note-label">Si Activate.ps1 est bloqué</span>
+          <p>Windows refuse par défaut l'exécution de scripts non signés. Autorise-la pour la
+            session courante uniquement — aucune trace au-delà de la fenêtre :</p>
+          <p><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</code></p>
+        </div>
+
+        <div class="note">
+          <span class="note-label">Sans activer l'environnement</span>
+          <p>Tu peux toujours appeler les binaires directement :
+            <code>.\.venv\Scripts\hachure.exe</code> ou
+            <code>.\.venv\Scripts\python.exe -m hachure</code>.</p>
+        </div>
+      </section>
+
+      <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
+
+      <!-- 03 -->
+      <section id="verification">
+        <div class="sec-head"><span class="sec-num">03</span><h2>Vérification</h2></div>
+        <p>Une seule commande couvre toute la chaîne : versions Python et bibliothèques, présence
+          des trois outils FFmpeg, taille du terminal, profondeur de couleur détectée et encodage
+          de sortie. C'est le premier réflexe dès qu'un rendu se comporte mal.</p>
+
+        <div class="shell">
+          <div class="shell-bar"><span>Sortie réelle de ce poste</span></div>
+          <pre><span class="p">PS&gt;</span> hachure doctor
+<span class="o">hachure       0.3.0
+python        3.11.9 (...\hachure-ascii\.venv\Scripts\python.exe)
+numpy         2.4.6
+PIL           12.3.0
+ffmpeg        ffmpeg version 9.0.1-full_build
+ffplay        ffplay version 9.0.1-full_build
+ffprobe       ffprobe version 9.0.1-full_build
+terminal      120 x 40 cellules
+profondeur    truecolor
+rapport cell. 0.5
+tty stdout    True
+codec stdout  utf-8</span></pre>
+        </div>
+
+        <p>Les quatre dernières lignes décrivent le terminal, pas le projet, et expliquent la
+          plupart des surprises de rendu :</p>
+
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Ligne</th><th>Ce qu'elle contrôle</th></tr></thead>
+            <tbody>
+              <tr><td class="sym">terminal</td><td>La grille disponible. <code>--width</code> est un plafond, pas une cible : il est ramené à cette largeur.</td></tr>
+              <tr><td class="sym">profondeur</td><td><code>truecolor</code> = 24 bits. Si la valeur est <code>none</code>, <code>--color</code> ne produira rien de visible.</td></tr>
+              <tr><td class="sym">rapport cell.</td><td>Largeur d'une cellule divisée par sa hauteur. <code>0.5</code> convient à la plupart des polices ; monte vers <code>0.6</code> si l'image paraît étirée verticalement.</td></tr>
+              <tr><td class="sym">codec stdout</td><td>Doit être <code>utf-8</code> pour les glyphes demi-bloc. Voir le dépannage si tu vois <code>cp1252</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note ok">
+          <span class="note-label">Deux valeurs qui dépendent du contexte</span>
+          <p><code>tty stdout</code> et <code>profondeur</code> changent selon que la sortie va
+            vers un vrai terminal ou vers un fichier. Redirigée, la détection renvoie
+            <code>False</code> et <code>none</code> — c'est le comportement attendu, pas une
+            panne.</p>
+        </div>
+
+        <p>Enfin, <code>hachure list</code> énumère les renderers disponibles : trois entrées
+          (image, video, camera) et cinq démos procédurales.</p>
+      </section>
+
+      <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
+
+      <!-- 04 -->
+      <section id="rendus">
+        <div class="sec-head"><span class="sec-num">04</span><h2>Premiers rendus</h2></div>
+        <p><kbd>Ctrl</kbd>+<kbd>C</kbd> arrête proprement toute animation, vidéo ou caméra : le
+          curseur et les couleurs du terminal sont restaurés dans tous les cas, y compris après une
+          erreur.</p>
+
+        <h3>Le plus simple : le menu</h3>
+        <p class="tight">Sans rien connaître des options, tape la commande seule :</p>
+        <div class="shell">
+          <div class="shell-bar"><span>menu</span><span>navigation aux flèches</span></div>
+          <pre><span class="p">PS&gt;</span> hachure
+<span class="o">hachure · rendu d'images, de vidéos et de 3D en caractères
+
+  Image fixe          convertir une photo en caractères
+  Vidéo               lire un fichier vidéo
+  Caméra              diffuser une caméra en direct
+  Démo procédurale    cube, sphère, tore, planète, trou noir
+  Diagnostic          dépendances et capacités du terminal
+  Moteurs disponibles ce que le projet sait rendre
+  Calibrer une rampe  mesurer une police à chasse fixe
+  Quitter
+
+↑↓ déplacer · Entrée valider · Échap revenir</span></pre>
+        </div>
+
+        <p>Flèches <kbd>↑</kbd> <kbd>↓</kbd> pour se déplacer, <kbd>Entrée</kbd> pour valider,
+          <kbd>Échap</kbd> pour revenir.</p>
+
+        <p><strong>Rien ne se tape.</strong> Choisis une source et un navigateur de fichiers
+          s'ouvre, filtré sur les formats que la commande sait lire, avec la taille de chaque
+          fichier :</p>
+
+        <div class="shell">
+          <div class="shell-bar"><span>navigateur</span><span>filtré sur les vidéos</span></div>
+          <pre><span class="o">Quelle vidéo ?
+C:\Users\moi\Videos
+
+› ..                     dossier parent
+  archives/              dossier
+  concert.mp4            84.2 Mo
+  timelapse.mkv          12.7 Mo
+  [ changer de disque ]
+  [ annuler ]</span></pre>
+        </div>
+
+        <p><code>..</code> remonte d'un cran, un dossier s'ouvre, un fichier se choisit. Les
+          dossiers trop grands sont bornés, et le dernier dossier visité est mémorisé pour
+          l'ouverture suivante.</p>
+
+        <p>Vient ensuite l'écran de réglages, où chaque ligne se change sans jamais saisir de
+          valeur : <kbd>Espace</kbd> ou <kbd>←</kbd> <kbd>→</kbd> passent à la valeur suivante,
+          <kbd>Entrée</kbd> ouvre la liste complète. Une valeur laissée sur <code>défaut</code>
+          n'est pas transmise — c'est le défaut de la CLI qui s'applique, jamais une copie figée
+          dans le menu.</p>
+
+        <div class="shell">
+          <div class="shell-bar"><span>réglages</span><span>aucune saisie</span></div>
+          <pre><span class="o">Réglages · video
+
+  Largeur maximale     160
+  Ajustement           cover
+› Contours (--edges)   oui
+  Jeu de caractères    detailed
+  Durée en secondes    30
+  Enregistrer le rendu concert.mp4
+
+  Lancer le rendu
+  Annuler
+
+hachure … --width 160 --fit cover --edges --charset detailed --duration 30 …</span></pre>
+        </div>
+
+        <p>Pour une destination d'enregistrement, le navigateur sert à désigner un
+          <strong>dossier</strong>, puis un nom est proposé à partir du nom de la source — avec une
+          variante horodatée, pour ne pas écraser un rendu précédent sans le vouloir.</p>
+
+        <p>La dernière ligne est le point important : le menu ne fait que <strong>composer une ligne
+          de commande</strong>, il te la montre, puis il la joue. C'est aussi la façon la plus
+          rapide d'apprendre les options décrites plus bas.</p>
+
+        <div class="note">
+          <span class="note-label">Hors terminal</span>
+          <p>Redirigée vers un pipe ou un fichier — ce qui inclut Git Bash, dont Python ne
+            reconnaît pas le terminal —, la navigation aux flèches n'est pas possible : le menu
+            affiche alors des listes numérotées et lit les réponses ligne par ligne.</p>
+        </div>
+
+        <h3>Image fixe</h3>
+        <p class="tight">Les exemples ci-dessous prennent <code>photo.png</code> et <code>clip.mp4</code> : remplace-les par tes propres fichiers, ou laisse le navigateur du menu les trouver.</p>
+        <div class="shell">
+          <div class="shell-bar"><span>image</span></div>
+          <pre><span class="c"># rendu simple</span>
+<span class="p">PS&gt;</span> hachure image photo.png --width 100
+
+<span class="c"># le meilleur rendu en caractères : bords + plage tonale complète</span>
+<span class="p">PS&gt;</span> hachure image photo.png --width 100 --color --edges --auto-levels
+
+<span class="c"># écrire dans un fichier texte UTF-8 plutôt que dans le terminal</span>
+<span class="p">PS&gt;</span> hachure image photo.png --width 120 -o out\photo.txt</pre>
+        </div>
+
+        <h3>Vidéo</h3>
+        <div class="shell">
+          <div class="shell-bar"><span>video</span></div>
+          <pre><span class="c"># lecture avec audio</span>
+<span class="p">PS&gt;</span> hachure video clip.mp4
+
+<span class="c"># le réglage recommandé, en plein écran</span>
+<span class="p">PS&gt;</span> hachure video clip.mp4 --color --charset detailed --edges --auto-levels --width 1000
+
+<span class="c"># un extrait de 10 s à partir de 0:30, en boucle, sans audio</span>
+<span class="p">PS&gt;</span> hachure video clip.mp4 --start 30 --duration 10 --loop --no-audio
+
+<span class="c"># enregistrer ce qui est rendu</span>
+<span class="p">PS&gt;</span> hachure video clip.mp4 --color --half --record out\clip.mp4</pre>
+        </div>
+
+        <div class="note">
+          <span class="note-label">Pourquoi --width 1000</span>
+          <p><code>--width</code> vaut 160 par défaut et agit comme un maximum. Sur un terminal
+            large, une valeur volontairement trop grande est simplement ramenée à la largeur
+            réelle — c'est la façon normale de remplir la fenêtre. <code>--fit cover</code> recadre
+            en plus la source à la forme du terminal, ce qui rend exploitable une vidéo verticale.</p>
+        </div>
+
+        <h3>Caméra</h3>
+        <div class="shell">
+          <div class="shell-bar"><span>camera</span><span>2 périphériques détectés ici</span></div>
+          <pre><span class="p">PS&gt;</span> hachure camera --list
+<span class="o">Caméras :
+  Integrated Webcam
+  LSVCam</span>
+
+<span class="p">PS&gt;</span> hachure camera --color --edges
+<span class="p">PS&gt;</span> hachure camera --device "Integrated Webcam" --size 1280x720 --duration 10 --record out\me.gif</pre>
+        </div>
+
+        <h3>Démos procédurales</h3>
+        <p class="tight">Cinq scènes calculées en temps réel, sans source externe : projection,
+          éclairage et tampon de profondeur écrits à la main.</p>
+        <div class="shell">
+          <div class="shell-bar"><span>demo</span></div>
+          <pre><span class="p">PS&gt;</span> hachure demo donut --fps 30
+<span class="p">PS&gt;</span> hachure demo planet --width 120 --charset detailed
+<span class="p">PS&gt;</span> hachure demo blackhole --width 140 --record out\blackhole.gif</pre>
+        </div>
+        <p>Les autres noms sont <code>cube</code> et <code>sphere</code>. Toutes les démos
+          acceptent <code>--width</code>, <code>--height</code>, <code>--fps</code>,
+          <code>--charset</code>, <code>--invert</code> et les options d'enregistrement, et
+          se recomposent quand la fenêtre est redimensionnée.</p>
+      </section>
+
+      <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
+
+      <!-- 05 -->
+      <section id="dev">
+        <div class="sec-head"><span class="sec-num">05</span><h2>Développement</h2></div>
+
+        <h3>Lancer les tests</h3>
+        <p class="tight">197 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit
+          de vrai fichier média : les appels FFmpeg sont simulés, les touches du menu et les saisies
+          clavier le sont aussi, et les rendus sont comparés sur de petits tableaux NumPy construits
+          à la main.</p>
+
+        <div class="shell">
+          <div class="shell-bar"><span>Sortie réelle de ce poste</span></div>
+          <pre><span class="p">PS&gt;</span> python -m unittest discover -s tests
+<span class="o">....................................................................
+----------------------------------------------------------
+Ran 197 tests in 1.037s
+
+OK</span></pre>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Commande</th><th>Portée</th></tr></thead>
+            <tbody>
+              <tr><td><code>python -m unittest discover -s tests -v</code></td><td>Suite complète, exactement comme la CI.</td></tr>
+              <tr><td><code>python -m pytest</code></td><td>Équivalent. Les tests sont écrits en <code>unittest</code> mais pytest les exécute.</td></tr>
+              <tr><td><code>python -m pytest tests/test_render.py -k half</code></td><td>Un fichier, filtré par motif.</td></tr>
+              <tr><td><code>python -m unittest tests.test_render.RenduMonochromeTests</code></td><td>Une classe isolée.</td></tr>
+              <tr><td><code>python -W error::DeprecationWarning -m unittest discover -s tests</code></td><td>Forme stricte de la CI : tout <code>DeprecationWarning</code> devient une erreur.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="note-label">Ni linter ni formateur</span>
+          <p>Le projet n'en configure aucun. La CI lance la suite sur Python 3.10 et 3.14, puis
+            vérifie que <code>hachure --version</code> et <code>hachure list</code> répondent.</p>
+        </div>
+
+        <h3>Calibrer une rampe sur ta police</h3>
+        <p class="tight">Les rampes intégrées sont ordonnées à l'œil, sauf <code>smooth</code> qui
+          est mesurée. La commande <code>calibrate</code> rend chaque glyphe ASCII imprimable,
+          mesure sa couverture d'encre réelle et construit une rampe dont les paliers sont
+          régulièrement espacés.</p>
+        <div class="shell">
+          <div class="shell-bar"><span>calibrate</span></div>
+          <pre><span class="p">PS&gt;</span> hachure calibrate --font "C:\Windows\Fonts\CascadiaMono.ttf" --length 12</pre>
+        </div>
+        <p>Le résultat s'ajoute à <code>CHARSETS</code> dans
+          <code>hachure/charsets.py</code> pour devenir accessible via
+          <code>--charset</code>.</p>
+
+        <h3>Publier une version</h3>
+        <p class="tight">Le workflow de publication compare <code>__version__</code>, dans
+          <code>hachure/__init__.py</code>, au tag de la release privé de son préfixe
+          <code>v</code>. <strong>Les deux doivent correspondre</strong>, sinon le build échoue
+          avant même la construction du paquet.</p>
+      </section>
+
+      <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
+
+      <!-- 06 -->
+      <section id="depannage">
+        <div class="sec-head"><span class="sec-num">06</span><h2>Dépannage</h2></div>
+        <p>Les six situations réellement rencontrées, dans l'ordre où elles se présentent.</p>
+
+        <h3><code>hachure</code> : commande introuvable</h3>
+        <p class="tight">L'environnement n'est pas activé, ou le dossier <code>Scripts</code> n'est
+          pas dans le <code>PATH</code>. La forme module fonctionne toujours :
+          <code>python -m hachure list</code>.</p>
+
+        <h3>« FFmpeg est introuvable dans le PATH »</h3>
+        <p class="tight">FFmpeg est installé mais le terminal a été ouvert avant. Ferme-le et
+          rouvre-le, puis confirme avec <code>hachure doctor</code>. Le message équivalent pour
+          l'audio se contourne avec <code>--no-audio</code>.</p>
+
+        <h3>« 'charmap' codec can't encode characters »</h3>
+        <p class="tight">Sur Windows, une sortie <strong>redirigée</strong> retombe sur la page de
+          codes cp1252, qui ne connaît pas <code>▀</code>. Le cas se produit avec
+          <code>--half</code> envoyé vers un fichier ou un pipe. Deux sorties :</p>
+        <div class="shell">
+          <div class="shell-bar"><span>Contournement</span></div>
+          <pre><span class="c"># -o écrit explicitement en UTF-8</span>
+<span class="p">PS&gt;</span> hachure image photo.png --half -o out\photo.txt
+
+<span class="c"># ou forcer l'encodage de sortie</span>
+<span class="p">PS&gt;</span> $env:PYTHONIOENCODING = "utf-8"</pre>
+        </div>
+
+        <h3>L'image paraît étirée ou écrasée</h3>
+        <p class="tight">La correction d'aspect ne correspond pas à ta police. Monte
+          <code>--char-aspect</code> vers <code>0.6</code> si le rendu est étiré en hauteur. La
+          variable d'environnement <code>HACHURE_CHAR_ASPECT</code> fixe la valeur une fois pour
+          toutes.</p>
+
+        <h3>Des colonnes vides sur les côtés</h3>
+        <p class="tight">Le ratio de la source est préservé : un clip 16:9 réclame environ 3,5
+          colonnes par ligne. Si le terminal n'a pas assez de lignes, la largeur est réduite.
+          Augmente <code>--width</code>, ou passe en <code>--fit cover</code> pour recadrer au lieu
+          de laisser des bandes.</p>
+
+        <h3><code>pip list</code> affiche une version périmée</h3>
+        <p class="tight">Une installation éditable fige les métadonnées au moment de l'installation :
+          <code>pip list</code> peut annoncer <code>0.2.0</code> alors que
+          <code>hachure --version</code> répond <code>0.3.0</code>. C'est
+          <code>--version</code> qui dit vrai, puisqu'il lit le code en direct. Un
+          <code>pip install -e ".[dev]"</code> rafraîchit l'étiquette.</p>
+
+        <h3>La lecture saccade</h3>
+        <p class="tight">Dans l'ordre d'efficacité : monter <code>--quant</code>, baisser
+          <code>--fps</code>, baisser <code>--width</code>. À garder en tête : <code>--half</code>
+          double le nombre de pixels par trame, et <code>--edges</code> échantillonne neuf fois
+          plus de pixels — c'est la seule option qui alourdit le décodage et pas seulement le
+          rendu.</p>
+      </section>
+
+      <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
+
+      <!-- 07 -->
+      <section id="reference">
+        <div class="sec-head"><span class="sec-num">07</span><h2>Options clés</h2></div>
+        <p>Les réglages qui changent vraiment le résultat, partagés par <code>image</code>,
+          <code>video</code> et <code>camera</code>.</p>
+
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Option</th><th>Défaut</th><th>Effet</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="sym">--edges</td><td class="sym">off</td>
+                <td>Le gain le plus important. L'orientation dominante du contour dans chaque
+                  cellule remplace le caractère de luminosité par <code>-</code>, <code>\</code>,
+                  <code>|</code> ou <code>/</code>. Les silhouettes ressortent.</td>
+              </tr>
+              <tr>
+                <td class="sym">--auto-levels</td><td class="sym">off</td>
+                <td>Étire chaque trame sur toute la rampe au lieu de la bande étroite qu'elle
+                  occupe. Mesuré aux 2ᵉ et 98ᵉ percentiles, lissé entre les trames.</td>
+              </tr>
+              <tr>
+                <td class="sym">--charset</td><td class="sym">classic</td>
+                <td><code>classic</code>, <code>detailed</code>, <code>letters</code> ou
+                  <code>smooth</code>. <code>smooth</code> est calibrée sur la couverture d'encre
+                  réelle et exclut les quatre glyphes de contour.</td>
+              </tr>
+              <tr>
+                <td class="sym">--half</td><td class="sym">off</td>
+                <td>Deux pixels empilés par cellule. Se rapproche de la photo, mais cesse de
+                  ressembler à des caractères — incompatible avec <code>--edges</code>.</td>
+              </tr>
+              <tr>
+                <td class="sym">--fit</td><td class="sym">contain</td>
+                <td><code>cover</code> recadre la source à la forme du terminal au lieu de la
+                  laisser en bandes.</td>
+              </tr>
+              <tr>
+                <td class="sym">--gamma</td><td class="sym">1.0</td>
+                <td>Reprofile les tons moyens : au-dessus de 1 éclaircit. Sur une source couleur,
+                  appliqué en gain sur les trois canaux, ce qui préserve la teinte.</td>
+              </tr>
+              <tr>
+                <td class="sym">--quant</td><td class="sym">4</td>
+                <td>Pas de quantification couleur. Plus il est grand, plus les séquences
+                  d'échappement sont rares — le levier principal sur un terminal lent.</td>
+              </tr>
+              <tr>
+                <td class="sym">--smoothing</td><td class="sym">1.0</td>
+                <td>Fondu temporel entre trames. 1 est net ; descendre vers 0,35 laisse des
+                  traînées de mouvement.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="closing">
+          <h2>La combinaison à retenir</h2>
+          <p>Pour la vidéo, ces quatre options ensemble donnent le rendu en caractères le plus
+            lisible que le projet sache produire — sans jamais quitter la contrainte du
+            caractère :</p>
+          <div class="shell">
+            <pre><span class="p">PS&gt;</span> hachure video clip.mp4 --color --charset detailed --edges --auto-levels --width 1000</pre>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

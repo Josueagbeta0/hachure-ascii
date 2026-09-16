@@ -1,1 +1,1 @@
-"""Test suite for the ASCII Art package."""
+"""Suite de tests du paquet hachure."""

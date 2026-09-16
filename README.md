@@ -1,333 +1,520 @@
-# ASCII Art & Terminal Renderer
+# hachure
 
-A small command-line application for rendering images, videos, and procedural 3D experiments directly in a terminal.
+Rendre des images, des vidéos, une caméra en direct et des scènes 3D procédurales **en caractères, dans un terminal**.
 
-The project treats the terminal as a character-based framebuffer. Pixel brightness selects an ASCII character, ANSI escape sequences provide true color and screen updates, and mathematical renderers supply geometry, projection, lighting, and depth.
+La *hachure* est la technique qui rend le ton et la forme par des traits directionnels. C'est
+littéralement ce que fait ce moteur : une rampe de luminosité pour le ton, et un tenseur de
+structure qui choisit `-`, `\`, `|` ou `/` par cellule pour la forme.
+
+Tape `hachure`, sans rien d'autre, et navigue au clavier. Aucun argument à retenir, aucun chemin à
+taper : un menu, un navigateur de fichiers, des réglages qui se parcourent.
 
 ```text
-source pixels or 3D geometry
+pixels source ou géométrie 3D
               ↓
-      brightness / lighting
+     luminosité / éclairage
               ↓
-        character mapping
+ niveaux automatiques et gamma
               ↓
-       optional ANSI color
+orientation du contour par cellule
               ↓
-            terminal
+ correspondance caractère ou bloc
+              ↓
+    couleur ANSI facultative
+              ↓
+           terminal
 ```
 
-## Features
+---
 
-- One `ascii-art` command for every renderer.
-- Still-image conversion with automatic aspect-ratio correction.
-- Monochrome and ANSI true-color video playback.
-- Optional synchronized audio through FFplay.
-- Frame dropping to limit long-term audio/video drift.
-- Configurable FPS, width, character ramp, color smoothing, and inversion.
-- Automatic fitting to the current terminal.
-- Five procedural demos: cube, sphere, donut, planet, and black hole.
-- Safe terminal cleanup after completion, errors, or `Ctrl+C`.
-- Compatibility entry points for the original scripts.
+## Sommaire
 
-## Requirements
+[Le menu](#le-menu) · [Installation](#installation) · [En ligne de commande](#en-ligne-de-commande) ·
+[Le mode caractère](#tirer-le-meilleur-du-mode-caractère) · [Image](#rendu-dimage) ·
+[Vidéo](#rendu-vidéo) · [Caméra](#capture-caméra) · [Enregistrement](#enregistrement) ·
+[Démos](#démos-procédurales) · [Couleurs](#couleurs) · [Performance](#notes-de-performance) ·
+[Développement](#développement) · [Crédits](#crédits)
 
-- Python 3.10 or newer.
-- Pillow for still images.
-- NumPy for video frame processing.
-- FFmpeg for video decoding.
-- FFplay for audio playback, unless `--no-audio` is used.
-- FFprobe is recommended for detecting the source video's dimensions. A 16:9 fallback is used when it is unavailable.
+---
 
-Check the external video tools:
+## Le menu
+
+Une seule commande, sans argument :
 
 ```powershell
-ffmpeg -version
-ffplay -version
-ffprobe -version
+hachure
 ```
 
-On Windows, install an FFmpeg distribution containing all three programs and ensure its executable directory is on `PATH`.
+```text
+hachure · rendu d'images, de vidéos et de 3D en caractères
+
+  Image fixe           convertir une photo en caractères
+› Vidéo                lire un fichier vidéo
+  Caméra               diffuser une caméra en direct
+  Démo procédurale     cube, sphère, tore, planète, trou noir
+  Diagnostic           dépendances et capacités du terminal
+  Moteurs disponibles  ce que le projet sait rendre
+  Calibrer une rampe   mesurer une police à chasse fixe
+  Quitter
+
+↑↓ déplacer · Entrée valider · Échap revenir
+```
+
+**Rien ne se tape.** Choisis une source et un navigateur de fichiers s'ouvre, filtré sur les formats
+que la commande sait lire, avec la taille de chaque fichier :
+
+```text
+Quelle vidéo ?
+C:\Users\moi\Videos
+
+› ..                     dossier parent
+  archives/              dossier
+  vacances/              dossier
+  concert.mp4            84.2 Mo
+  timelapse.mkv          12.7 Mo
+  [ changer de disque ]
+  [ annuler ]
+```
+
+Puis un écran de réglages, où chaque ligne se change sans jamais saisir de valeur — `Espace` ou
+←→ pour passer à la suivante, `Entrée` pour ouvrir la liste complète :
+
+```text
+Réglages · video
+
+  Largeur maximale     160
+  Hauteur maximale     défaut
+  Ajustement           cover
+  Couleur              oui
+› Contours (--edges)   oui
+  Niveaux automatiques oui
+  Jeu de caractères    detailed
+  Géométrie de cellule char
+  Inverser la rampe    non
+  Images par seconde   24
+  Couper le son        non
+  Lire en boucle       non
+  Départ en secondes   défaut
+  Durée en secondes    30
+  Enregistrer le rendu concert.mp4
+
+  Lancer le rendu
+  Annuler
+
+hachure … --width 160 --fit cover --color --edges --auto-levels --charset detailed --fps 24 …
+↑↓ déplacer · Espace/←→ changer · Entrée ouvrir · Échap revenir
+```
+
+La ligne du bas est le point important : **le menu ne fait que composer une ligne de commande**, il
+te la montre, puis il la joue. Tu repars donc en sachant quoi retaper directement :
+
+```text
+$ hachure video concert.mp4 --width 160 --fit cover --color --edges --auto-levels --charset detailed
+```
+
+Un réglage laissé sur `défaut` n'est pas transmis : c'est la valeur par défaut de la CLI qui
+s'applique, jamais une copie figée dans le menu.
+
+`hachure menu` ouvre le même écran explicitement. Quand l'entrée ou la sortie est redirigée — un
+pipe, un script, Git Bash, où Python ne reconnaît pas le terminal — la navigation aux flèches
+devient impossible : le menu retombe alors sur des listes numérotées, et toutes les sous-commandes
+ci-dessous restent utilisables directement.
+
+---
 
 ## Installation
 
-Install the published package from PyPI:
+### Prérequis
+
+| Composant | Rôle |
+| --- | --- |
+| **Python ≥ 3.10** | La CI valide 3.10 et 3.14. NumPy et Pillow s'installent automatiquement. |
+| **ffmpeg** | Décode la vidéo et la caméra en images brutes. Requis par `video` et `camera` seulement. |
+| **ffprobe** | Lit dimensions et rotation de la source, pour redresser une vidéo filmée verticalement. |
+| **ffplay** | Lit la piste audio en parallèle. Facultatif : `--no-audio` s'en passe. |
+| **Police à chasse fixe** | Doit contenir `▀` et `▄` pour le mode demi-bloc. Cascadia Mono, Consolas, DejaVu Sans Mono, Menlo. |
+| **Terminal truecolor** | Windows Terminal, VS Code ou tout émulateur moderne, pour `--color` en 24 bits. |
+
+FFmpeg livre les trois binaires ensemble. **Rouvre le terminal après l'installation**, pour que le
+`PATH` soit rechargé :
 
 ```powershell
-python -m pip install --upgrade pip
-python -m pip install terminal-ascii-art
+winget install Gyan.FFmpeg     # Windows
+brew install ffmpeg            # macOS
+sudo apt install ffmpeg        # Debian / Ubuntu
 ```
 
-Confirm that the command is available:
+### Depuis les sources
 
 ```powershell
-ascii-art --version
-ascii-art list
-```
-
-If `ascii-art` is not found because your Python scripts directory is not on `PATH`, use the module form:
-
-```powershell
-python -m terminal_ascii_art list
-```
-
-Python installations normally include pip. If `python -m pip --version` reports that pip is missing, bootstrap it with:
-
-```powershell
-python -m ensurepip --upgrade
-```
-
-### Install from source
-
-Clone the repository and enter it:
-
-```powershell
-git clone https://github.com/TFQ0/ASCII-Art.git
-cd ASCII-Art
-```
-
-Create and activate a virtual environment:
-
-```powershell
+git clone https://github.com/Josueagbeta0/hachure-ascii.git
+cd hachure-ascii
 py -m venv .venv
 .venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
 ```
 
-Install the project in editable mode:
+L'extra `dev` ajoute pytest. `-e` installe en mode éditable : le paquet pointe vers les sources, une
+modification est prise en compte sans réinstaller.
+
+### Pour que `hachure` réponde partout
+
+Installé dans un environnement virtuel, `hachure` n'existe que quand cet environnement est activé.
+Pour l'avoir dans n'importe quel terminal, installe-le dans ton Python principal, dont le dossier
+`Scripts` est déjà dans le `PATH` :
 
 ```powershell
-python -m pip install -e .
+py -m pip install -e "C:\chemin\vers\hachure-ascii"
 ```
 
-The editable installation provides the `ascii-art` command. The same interface can also be invoked as a Python module:
+Si la commande reste introuvable, la forme module fonctionne toujours :
 
 ```powershell
-python -m terminal_ascii_art list
+python -m hachure
 ```
 
-## Quick start
-
-Replace the example paths below with paths to your own image and video files.
-
-List every available renderer:
+### Vérifier
 
 ```powershell
-ascii-art list
+hachure doctor
 ```
-
-Convert an image:
-
-```powershell
-ascii-art image "C:\path\to\photo.jpg" --width 100
-```
-
-Play a monochrome video with audio:
-
-```powershell
-ascii-art video "C:\path\to\video.mp4"
-```
-
-Play a true-color video:
-
-```powershell
-ascii-art video "C:\path\to\video.mp4" --color --fps 20 --width 120
-```
-
-Run a procedural demo:
-
-```powershell
-ascii-art demo cube
-```
-
-Press `Ctrl+C` to stop an animation or video.
-
-Input files do not need to be inside the repository. Quote paths that contain spaces. For example, in PowerShell:
-
-```powershell
-ascii-art video "E:\Videos\Rena Circulation.mp4" --color --charset detailed --fps 20 --width 120
-```
-
-The equivalent Git Bash path is:
-
-```bash
-ascii-art video "/e/Videos/Rena Circulation.mp4" --color --charset detailed --fps 20 --width 120
-```
-
-## Image rendering
-
-```powershell
-ascii-art image IMAGE [options]
-```
-
-Examples:
-
-```powershell
-# Print the result in the terminal
-ascii-art image photo.png --width 120
-
-# Write plain ASCII to a UTF-8 text file
-ascii-art image photo.png --width 120 --output output\photo.txt
-
-# Use a longer character ramp and reverse its brightness direction
-ascii-art image photo.png --charset detailed --invert
-```
-
-Options:
-
-| Option | Purpose |
-| --- | --- |
-| `--width N` | Maximum output width. Default: `100`. |
-| `--height N` | Optional maximum output height. |
-| `--charset NAME` | `classic`, `detailed`, or `letters`. |
-| `--invert` | Reverse the dark-to-bright ramp. |
-| `-o`, `--output PATH` | Write the rendered text to a file. |
-
-The source ratio is preserved while accounting for terminal cells being approximately twice as tall as they are wide.
-
-## Video rendering
-
-```powershell
-ascii-art video VIDEO [options]
-```
-
-The default mode is monochrome with audio enabled. Add `--color` to preserve approximate source colors using ANSI 24-bit foreground codes.
-
-Examples:
-
-```powershell
-# Monochrome video without audio
-ascii-art video clip.mp4 --no-audio
-
-# Detailed true-color playback
-ascii-art video clip.mp4 --color --charset detailed --width 160 --fps 20
-
-# Add motion trails
-ascii-art video clip.mp4 --color --smoothing 0.35
-
-# Delay audio by 0.5 seconds
-ascii-art video clip.mp4 --audio-delay 0.5
-```
-
-Options:
-
-| Option | Purpose |
-| --- | --- |
-| `--color` | Enable ANSI true-color output. |
-| `--fps N` | Target playback rate. Default: `20`. |
-| `--width N` | Maximum render width. Default: `160`. |
-| `--smoothing N` | Temporal blend from `0` to `1`; `1` is crisp. |
-| `--quant N` | Color quantization step used to reduce ANSI output. Default: `4`. |
-| `--max-frame-skip N` | Consecutive frames that may be dropped to catch up. Default: `5`. |
-| `--no-audio` | Do not start FFplay. |
-| `--audio-delay N` | Shift audio by -30 to +30 seconds; positive values delay it. |
-| `--charset NAME` | `classic`, `detailed`, or `letters`. |
-| `--invert` | Reverse the selected brightness ramp. |
-
-The video pipeline is:
 
 ```text
-                       ┌─ FFmpeg → scaled raw frames → NumPy → ASCII → terminal
-source video ──────────┤
+hachure       0.3.0
+python        3.11.9 (C:\...\Python311\python.exe)
+numpy         1.26.4
+PIL           12.1.1
+ffmpeg        ffmpeg version 9.0.1-full_build
+ffplay        ffplay version 9.0.1-full_build
+ffprobe       ffprobe version 9.0.1-full_build
+terminal      120 x 40 cellules
+profondeur    truecolor
+rapport cell. 0.5
+tty stdout    True
+codec stdout  utf-8
+```
+
+Les cinq dernières lignes décrivent le terminal, pas le projet, et expliquent la plupart des
+surprises de rendu :
+
+| Ligne | Ce qu'elle contrôle |
+| --- | --- |
+| `terminal` | La grille disponible. `--width` est un plafond, pas une cible : il y est ramené. |
+| `profondeur` | `truecolor` = 24 bits. Si c'est `none`, `--color` ne produira rien de visible. |
+| `rapport cell.` | Largeur d'une cellule divisée par sa hauteur. Monte vers `0.6` si l'image paraît étirée. |
+| `codec stdout` | Doit être `utf-8` pour les glyphes demi-bloc. |
+
+`tty stdout` et `profondeur` changent selon que la sortie va vers un vrai terminal ou vers un
+fichier. Redirigée, la détection renvoie `False` et `none` : c'est attendu, pas une panne.
+
+Un guide pas à pas — prérequis, vérification, premiers rendus, dépannage — est dans
+[`docs/INSTALLATION.md`](docs/INSTALLATION.md), avec une version mise en page dans
+[`docs/installation.html`](docs/installation.html).
+
+---
+
+## En ligne de commande
+
+```powershell
+hachure                       # le menu interactif
+hachure list                  # tous les moteurs disponibles
+hachure doctor                # diagnostic
+
+hachure image photo.jpg --width 100 --color --edges --auto-levels
+hachure video clip.mp4 --color --charset detailed --edges --auto-levels --fit cover --width 1000
+hachure camera --color --edges
+hachure demo blackhole
+```
+
+`Ctrl+C` arrête proprement toute animation, vidéo ou caméra : le curseur et les couleurs du terminal
+sont restaurés dans tous les cas, y compris après une erreur.
+
+---
+
+## Tirer le meilleur du mode caractère
+
+Le mode caractère est celui par défaut, et c'est tout l'intérêt du projet : l'image est faite de
+caractères, et c'est ce qui produit l'effet. Trois réglages l'affinent sans jamais sortir de cette
+contrainte.
+
+### `--edges` — la plus grosse amélioration à elle seule
+
+La luminosité seule jette la forme. Avec `--edges`, la source est échantillonnée au-dessus de la
+résolution des cellules, l'orientation de contour dominante dans chaque cellule est mesurée par un
+tenseur de structure, et un glyphe de ligne adapté remplace le caractère de luminosité :
+
+| Direction du contour | Glyphe |
+| --- | --- |
+| horizontale | `-` |
+| diagonale descendante | `\` |
+| verticale | `\|` |
+| diagonale montante | `/` |
+
+Silhouettes, visages et contours sortent du bruit. Seules les cellules portant un contour fort *et*
+cohérent sont remplacées : les zones plates gardent leur ton. `--edge-strength` (de 0 à 1, défaut
+`0.5`) fixe la force requise — baisse-la pour plus de traits, monte-la pour moins.
+
+Le tenseur de structure plutôt qu'un gradient moyenné, parce que des gradients opposés le long d'un
+même contour s'annulent à la moyenne : exactement ce qui arrive dans une cellule à cheval sur une
+ligne fine.
+
+### `--auto-levels` et `--gamma`
+
+La luminosité est projetée linéairement sur la rampe : une scène sombre n'atteint donc jamais les
+caractères denses, ni une scène claire les caractères clairsemés. `--auto-levels` étire chaque image
+sur toute la rampe, mesurée aux 2ᵉ et 98ᵉ percentiles pour que quelques pixels isolés ne définissent
+pas la plage. Les niveaux glissent d'une image à l'autre, si bien que la lecture ne pulse pas quand
+un élément lumineux traverse le plan.
+
+`--gamma` remodèle les tons moyens par-dessus : au-dessus de `1` ça éclaircit, en dessous ça
+assombrit. Sur une source en couleur, les deux s'appliquent comme un gain sur les trois canaux, ce
+qui préserve la teinte.
+
+### `--charset smooth`
+
+Les rampes intégrées sont ordonnées à l'œil. `smooth` est **mesurée** : chaque glyphe ASCII
+imprimable a été rendu puis noté sur sa couverture d'encre et sur la régularité de répartition de
+cette encre, avant que la rampe ne soit choisie de façon à ce que ses pas soient régulièrement
+espacés en couverture réelle. Les dégradés progressent proprement au lieu de vaciller entre des
+caractères sosies. Les quatre glyphes de ligne sont volontairement exclus, pour rester sans
+ambiguïté quand `--edges` est actif.
+
+En calibrer une pour ta propre police :
+
+```powershell
+hachure calibrate --font "C:\Windows\Fonts\CascadiaMono.ttf" --length 12
+```
+
+### Tout mettre ensemble
+
+```powershell
+hachure video clip.mp4 --color --charset detailed --edges --auto-levels --width 1000
+```
+
+### Cellules demi-bloc
+
+`--cells half`, ou son raccourci `--half`, tasse deux pixels empilés dans chaque cellule grâce au
+demi-bloc supérieur : le premier plan peint le pixel du haut, l'arrière-plan celui du bas. Le
+résultat approche la photographie, ce qui veut aussi dire qu'il cesse de ressembler à des
+caractères — à utiliser quand la fidélité compte plus que l'effet. `--edges` ne s'applique pas,
+puisque le glyphe est toujours le même.
+
+### Remplir l'écran
+
+Le rendu préserve le rapport d'image de la source : un plan en 16:9 réclame environ 3,5 colonnes par
+ligne. Si le terminal a moins de lignes que ce rapport ne l'exige, la largeur est réduite et des
+colonnes restent vides. Trois éléments pilotent cela :
+
+- **`--width`** est un maximum, pas une cible. Il vaut `160` par défaut : sur un terminal large il
+  faut le monter, et `--width 1000` est ramené sans risque à la largeur réelle.
+- **`--fit cover`** recadre la source à la forme du terminal au lieu de l'encadrer de bandes. C'est
+  ce qui rend exploitables les vidéos verticales de téléphone.
+- **`--char-aspect`** indique la largeur d'une cellule par rapport à sa hauteur. `0.5` convient à la
+  plupart des polices ; monte vers `0.6` si l'image paraît étirée verticalement. La variable
+  d'environnement `HACHURE_CHAR_ASPECT` le règle globalement.
+
+Redimensionner la fenêtre en cours de lecture est pris en charge : la grille est recalculée et le
+flux reprend à la position courante.
+
+---
+
+## Rendu d'image
+
+```powershell
+hachure image IMAGE [options]
+
+hachure image photo.png --width 120
+hachure image photo.png --width 120 --output rendu.txt
+hachure image photo.png --width 1000 --fit cover --half --color
+```
+
+| Option | Rôle |
+| --- | --- |
+| `--width N` | Largeur de sortie maximale. Défaut : `100`. |
+| `--height N` | Hauteur de sortie maximale, facultative. |
+| `--fit MODE` | `contain` (bandes) ou `cover` (recadre pour remplir). Défaut : `contain`. |
+| `--char-aspect N` | Largeur d'une cellule divisée par sa hauteur. Défaut : `0.5`. |
+| `--cells MODE` | `char` ou `half`. Défaut : `char`. |
+| `--half` | Raccourci de `--cells half`. |
+| `--color` / `--no-color` | Active ou désactive la couleur. Les images sont monochromes par défaut. |
+| `--color-depth NOM` | `auto`, `truecolor`, `ansi256` ou `none`. |
+| `--quant N` | Pas de quantification des couleurs. Défaut : `4`. |
+| `--edges` | Remplace le caractère de rampe par un glyphe de ligne sur les vrais contours. |
+| `--edge-strength N` | Force requise d'un contour, de `0` à `1`. Défaut : `0.5`. |
+| `--auto-levels` | Étire l'image sur toute la rampe. |
+| `--gamma N` | Tons moyens ; au-dessus de `1` ça éclaircit. Défaut : `1.0`. |
+| `--charset NOM` | `classic`, `detailed`, `letters` ou `smooth`. |
+| `--invert` | Retourne la rampe sombre-vers-clair. |
+| `-o`, `--output CHEMIN` | Écrit le texte rendu dans un fichier UTF-8. |
+
+---
+
+## Rendu vidéo
+
+```powershell
+hachure video VIDEO [options]
+
+hachure video clip.mp4 --no-audio
+hachure video clip.mp4 --color --charset detailed --edges --auto-levels --width 1000
+hachure video clip.mp4 --start 30 --duration 10 --loop
+hachure video clip.mp4 --color --smoothing 0.35
+hachure video clip.mp4 --color --half --record renders\clip.mp4
+```
+
+| Option | Rôle |
+| --- | --- |
+| `--fps N` | Cadence de lecture visée. Défaut : `20`. |
+| `--width N` / `--height N` | Taille de rendu maximale en caractères. Largeur : `160` par défaut. |
+| `--fit MODE` | `contain` ou `cover`. Défaut : `contain`. |
+| `--cells MODE` / `--half` | Géométrie de cellule, comme ci-dessus. |
+| `--color` / `--no-color` | Sortie en couleur. La vidéo est monochrome par défaut. |
+| `--color-depth NOM` | Court-circuite la détection de couleur du terminal. |
+| `--quant N` | Pas de quantification des couleurs. Défaut : `4`. |
+| `--edges`, `--edge-strength N` | Glyphes de contour, comme ci-dessus. |
+| `--auto-levels`, `--gamma N` | Mise en forme tonale, comme ci-dessus. |
+| `--smoothing N` | Fondu temporel de `0` à `1` ; `1` est net, plus bas laisse des traînées. |
+| `--max-frame-skip N` | Images consécutives abandonnables pour rattraper le retard. Défaut : `5`. |
+| `--start N` | Position de départ en secondes. |
+| `--duration N` | Arrête après ce nombre de secondes. |
+| `--loop` | Redémarre quand la vidéo se termine. |
+| `--no-audio` | Ne lance pas FFplay. |
+| `--audio-delay N` | Décale l'audio de -30 à +30 s ; une valeur positive le retarde. |
+| `--record CHEMIN` | Écrit la sortie rendue en `.mp4` ou `.gif`. |
+| `--charset NOM`, `--invert` | Rampe de caractères, comme ci-dessus. |
+
+Les métadonnées de rotation sont respectées : un plan filmé en portrait au téléphone est mesuré et
+rendu droit, plutôt qu'écrasé.
+
+```text
+                       ┌─ FFmpeg → images brutes mises à l'échelle → NumPy → cellules → terminal
+vidéo source ──────────┤
                        └─ FFplay → audio
 ```
 
-The renderer uses a wall-clock schedule. When terminal rendering falls behind, it can discard a bounded number of decoded frames instead of allowing drift to grow continuously.
+Le moteur suit un calendrier à l'horloge murale. Quand le rendu prend du retard, il abandonne un
+nombre borné d'images décodées au lieu de laisser la dérive s'installer.
 
-## Procedural demos
+---
+
+## Capture caméra
 
 ```powershell
-ascii-art demo NAME [options]
+hachure camera --list
+hachure camera --color --half
+hachure camera --device "Integrated Webcam" --size 1280x720 --duration 10 --record me.gif
 ```
 
-Available names:
+L'entrée caméra passe par DirectShow sous Windows, AVFoundation sous macOS et Video4Linux2 sous
+Linux. L'audio n'est jamais capturé. Si une caméra listée refuse de s'ouvrir sous Windows, autorise
+les applications de bureau dans *Paramètres → Confidentialité et sécurité → Caméra*, et ferme tout
+ce qui l'utilise déjà.
 
-| Demo | Technique |
+---
+
+## Enregistrement
+
+`--record CHEMIN` peint chaque image rendue avec une police à chasse fixe et redirige le résultat
+vers FFmpeg. Les séquences d'échappement sont relues au cours de cette passe : les enregistrements
+gardent donc leurs couleurs.
+
+| Option | Rôle |
 | --- | --- |
-| `cube` | Vertex rotation, perspective projection, face normals, back-face culling, triangle filling, and interpolated depth buffering. |
-| `sphere` | Per-cell sphere reconstruction and directional lighting. |
-| `donut` | Parametric torus sampling, normal-based lighting, perspective, and depth buffering. |
-| `planet` | Rotating sphere with procedural terrain, a night side, and an atmospheric rim. |
-| `blackhole` | Polar-coordinate accretion disk, deterministic stars, asymmetric glow, and a photon-ring effect. |
+| `--record CHEMIN` | Destination ; `.gif` produit un GIF animé, tout le reste une vidéo H.264. |
+| `--font CHEMIN` | `.ttf` à chasse fixe pour peindre. Une police système est trouvée automatiquement. |
+| `--font-size N` | Corps de la police, qui fixe la résolution de sortie. Défaut : `16`. |
 
-Examples:
+Disponible pour `video`, `camera` et `demo`.
 
-```powershell
-ascii-art demo donut --fps 30
-ascii-art demo planet --width 120 --charset detailed
-ascii-art demo blackhole --width 140 --height 50
-```
+---
 
-Every demo accepts `--width`, `--height`, `--fps`, `--charset`, and `--invert`. Dimensions are reduced when necessary to fit the terminal.
+## Démos procédurales
 
-## Character ramps
-
-Character ramps are ordered from dark to bright:
-
-```text
-classic:   " .:-=+*#%@"
-detailed:  a longer ramp with finer brightness changes
-letters:   a dense, text-like ramp
-```
-
-To add a procedural demo:
-
-1. Create a module under `terminal_ascii_art/renderers/`.
-2. Implement `render_frame(frame_index, width, height, ramp) -> str`.
-3. Register it in `terminal_ascii_art/renderers/__init__.py`.
-4. Add a renderer-contract or algorithm-specific test.
-5. Document the new demo here.
-
-## Testing
-
-Install the project and run the test suite from the repository root:
+Cinq scènes calculées en temps réel, sans source externe : projection, éclairage et tampon de
+profondeur écrits à la main.
 
 ```powershell
-python -m pip install -e .
-python -m unittest discover -s tests -v
+hachure demo NOM [options]
+
+hachure demo donut --fps 30
+hachure demo planet --width 120 --charset detailed
+hachure demo blackhole --width 140 --record blackhole.gif
 ```
 
-## Publishing a release
+| Démo | Technique |
+| --- | --- |
+| `cube` | Rotation des sommets, projection en perspective, normales de face, élimination des faces arrière, remplissage de triangles, tampon de profondeur interpolé. |
+| `sphere` | Reconstruction de la sphère cellule par cellule et éclairage directionnel. |
+| `donut` | Échantillonnage d'un tore paramétrique, éclairage par les normales, perspective, tampon de profondeur. |
+| `planet` | Sphère en rotation, relief procédural, face nocturne, halo atmosphérique. |
+| `blackhole` | Disque d'accrétion en coordonnées polaires, étoiles déterministes, lueur asymétrique, effet d'anneau de photons. |
 
-Releases are published from `TFQ0/ASCII-Art` by `.github/workflows/publish.yml`. The workflow runs the tests on the supported Python versions, builds and validates the wheel and source distribution, and publishes them to PyPI through Trusted Publishing.
+Toutes acceptent `--width`, `--height`, `--fps`, `--charset`, `--invert` et les options
+d'enregistrement. Les dimensions sont réduites au besoin pour tenir dans le terminal, et la scène se
+recompose quand la fenêtre est redimensionnée.
 
-Before the first release, configure a PyPI Trusted Publisher for the `terminal-ascii-art` project with these exact values:
+---
 
-- Owner: `RipperdocNiladri`
-- Repository: `ASCII-Art`
-- Workflow: `publish.yml`
-- Environment: `pypi`
+## Couleurs
 
-The GitHub `pypi` environment permits tags matching `v*`. If the account that creates the release is its only required reviewer, **Prevent self-review** must be disabled or another reviewer must be added.
+La profondeur de couleur est déduite de `COLORTERM`, de `TERM` et du terminal hôte, et `NO_COLOR`
+est respecté. `--color-depth` court-circuite le résultat :
 
-For every release:
+- `truecolor` — premier plan et arrière-plan sur 24 bits. Windows Terminal, VS Code, la plupart des
+  émulateurs modernes.
+- `ansi256` — la palette xterm-256, pour les terminaux plus anciens.
+- `none` — monochrome.
 
-1. Update `__version__` in `terminal_ascii_art/__init__.py`. Package metadata reads the version from this single source.
-2. Run the tests.
-3. Build and validate the distributions locally:
+`--quant` aligne les valeurs de canal sur un pas avant leur émission. Des valeurs plus grandes
+produisent de plus longues plages de couleur identique, donc moins de séquences d'échappement — ce
+qui compte sur un terminal lent.
 
-   ```powershell
-   python -m pip install --upgrade build twine
-   python -m build
-   python -m twine check dist/*
-   ```
+---
 
-4. Commit and push the release changes.
-5. Create a GitHub release whose tag exactly matches the package version with a `v` prefix, such as `v0.1.2`.
+## Notes de performance
 
-Publishing a GitHub release triggers the workflow. PyPI does not allow an existing release file or version to be overwritten, so each published version must be unique.
+- Les séquences d'échappement sont construites depuis des préfixes en cache et émises **par plage**
+  plutôt que par cellule, et seules les lignes réellement modifiées sont repeintes.
+- Monter `--quant`, baisser `--fps` ou baisser `--width` sont les leviers efficaces quand la lecture
+  saccade, dans cet ordre.
+- Les demi-cellules doublent le nombre de pixels : elles coûtent environ deux fois plus par image
+  que les cellules `char`, à grille égale.
+- `--edges` échantillonne trois pixels par côté de cellule, donc FFmpeg décode neuf fois plus de
+  pixels. Sur une grille de terminal normale cela reste faible, mais c'est la seule option qui
+  augmente le coût de **décodage** et pas seulement celui du rendu.
 
-## Performance and limitations
+---
 
-Terminal output is much slower than GPU rendering. Performance depends on the CPU, terminal emulator, selected width, FPS, character ramp, and whether ANSI color is enabled.
+## Développement
 
-Useful starting points:
+```powershell
+python -m unittest discover -s tests -v    # suite complète, comme la CI
+python -m pytest                           # équivalent
+python -m pytest tests/test_render.py -k half
+python -m unittest tests.test_render.RenduMonochromeTests
+```
 
-- `80` columns for low overhead.
-- `120` columns for balanced detail.
-- `160` columns for high detail on a capable terminal.
-- Monochrome mode when color output is too expensive.
-- A larger `--quant` value to reduce ANSI color changes.
+197 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit de vrai fichier média : les
+appels FFmpeg sont simulés, les touches du menu et les saisies clavier le sont aussi, et les rendus
+sont comparés sur de petits tableaux NumPy construits à la main.
 
-## License
+Ni linter ni formateur configuré. La CI lance la suite sur Python 3.10 et 3.14, puis vérifie que
+`hachure --version` et `hachure list` répondent.
 
-This project is distributed under the [MIT License](https://github.com/TFQ0/ASCII-Art/blob/main/LICENSE).
+**Le code, les commentaires, la documentation et les noms de tests sont en français.** Deux
+exceptions, marquées par un commentaire à leur emplacement : les sous-chaînes comparées à la sortie
+de FFmpeg, et les messages internes d'argparse et d'unittest, qui passent par gettext sans catalogue
+français dans CPython.
 
+L'architecture est décrite dans [`CLAUDE.md`](CLAUDE.md) : tout converge vers `render.py`, qui est
+le seul point de conversion entre pixels et texte.
+
+---
+
+## Crédits
+
+`hachure` dérive de [ASCII-Art](https://github.com/RipperdocNiladri/ASCII-Art), publié sous licence
+MIT par **Niladri Pal** et **Talal Alqahs**. Le rendu, la CLI et le menu ont été réécrits depuis,
+mais la notice de copyright d'origine est conservée dans [`LICENSE`](LICENSE), comme la licence MIT
+l'exige.
+
+Distribué sous licence MIT.

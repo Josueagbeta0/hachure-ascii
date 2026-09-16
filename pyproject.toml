@@ -3,21 +3,17 @@ requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "terminal-ascii-art"
+name = "hachure"
 dynamic = ["version"]
-description = "Render images, videos, and procedural 3D ASCII art in a terminal"
+description = "Rend images, vidéos, caméras et art 3D procédural en ASCII dans un terminal"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE*"]
-keywords = ["ascii-art", "terminal", "video", "graphics", "ansi"]
+keywords = ["ascii-art", "terminal", "video", "camera", "graphics", "ansi", "truecolor", "tui"]
 
 authors = [
-    { name = "Niladri Pal" },
-]
-
-maintainers = [
-    { name = "Talal Alqahs" },
+    { name = "Josué AGBETA" },
 ]
 
 classifiers = [
@@ -27,6 +23,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Multimedia :: Graphics",
+    "Topic :: Multimedia :: Video",
+    "Natural Language :: French",
 ]
 
 dependencies = [
@@ -34,16 +32,21 @@ dependencies = [
     "Pillow>=10.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
 [project.urls]
-Homepage = "https://github.com/TFQ0/ASCII-Art"
-Repository = "https://github.com/TFQ0/ASCII-Art"
-Issues = "https://github.com/TFQ0/ASCII-Art/issues"
+Homepage = "https://github.com/Josueagbeta0/hachure-ascii"
+Repository = "https://github.com/Josueagbeta0/hachure-ascii"
+Issues = "https://github.com/Josueagbeta0/hachure-ascii/issues"
 
 [project.scripts]
-ascii-art = "terminal_ascii_art.cli:main"
+hachure = "hachure.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["terminal_ascii_art*"]
+include = ["hachure*"]
 
 [tool.setuptools.dynamic]
-version = { attr = "terminal_ascii_art.__version__" }
+version = { attr = "hachure.__version__" }

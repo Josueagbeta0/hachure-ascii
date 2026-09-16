@@ -1,4 +1,4 @@
-"""Procedural shaded sphere renderer."""
+"""Rendu d'une sphère procédurale ombrée."""
 
 import math
 

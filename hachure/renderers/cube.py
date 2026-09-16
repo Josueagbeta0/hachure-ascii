@@ -1,4 +1,4 @@
-"""Filled, lit cube with perspective projection and depth buffering."""
+"""Cube plein et éclairé, avec projection en perspective et tampon de profondeur."""
 
 import math
 
@@ -17,7 +17,7 @@ VERTICES = (
     (-1.0, 1.0, 1.0),
 )
 
-# Counter-clockwise when viewed from outside the cube.
+# Sens antihoraire vu depuis l'extérieur du cube.
 FACES = (
     (0, 3, 2, 1),
     (4, 5, 6, 7),

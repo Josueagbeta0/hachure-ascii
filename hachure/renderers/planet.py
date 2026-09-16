@@ -1,4 +1,4 @@
-"""Procedural rotating planet renderer."""
+"""Rendu d'une planète procédurale en rotation."""
 
 import math
 
