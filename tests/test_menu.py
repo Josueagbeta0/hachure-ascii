@@ -105,15 +105,17 @@ class ChampsTests(unittest.TestCase):
         self.assertEqual(Fichier("--font", "Police").argv(), [])
 
     def test_un_fichier_affiche_son_nom_pas_son_chemin(self) -> None:
-        champ = Fichier("--font", "Police", valeur="C:\\Windows\\Fonts\\consola.ttf")
+        chemin = Path("Windows") / "Fonts" / "consola.ttf"
+        champ = Fichier("--font", "Police", valeur=str(chemin))
         self.assertEqual(champ.affichage(), "consola.ttf")
 
     def test_une_sortie_vide_est_omise(self) -> None:
         self.assertEqual(Sortie("--record", "Enregistrer", (".gif",)).argv(), [])
 
     def test_une_sortie_renseignee_est_emise(self) -> None:
-        champ = Sortie("--record", "Enregistrer", (".gif",), valeur="out\\demo.gif")
-        self.assertEqual(champ.argv(), ["--record", "out\\demo.gif"])
+        chemin = str(Path("out") / "demo.gif")
+        champ = Sortie("--record", "Enregistrer", (".gif",), valeur=chemin)
+        self.assertEqual(champ.argv(), ["--record", chemin])
 
     def test_les_champs_sont_concatenes_dans_l_ordre(self) -> None:
         champs = [
