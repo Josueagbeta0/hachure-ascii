@@ -26,6 +26,7 @@ from typing import Any, Literal
 
 from hachure.color import RESET, AnsiPalette, ColorDepth
 from hachure.edges import EDGE_GLYPHS, block_mean, edge_indices
+from hachure.i18n import T
 from hachure.tone import ToneMapper
 
 CellMode = Literal["char", "half"]
@@ -296,7 +297,7 @@ def render_array(
     :meth:`RenderStyle.pixel_rows` et :meth:`RenderStyle.pixel_cols`.
     """
     if style.colored and array.ndim != 3:
-        raise ValueError("Le rendu en couleur exige un tableau RVB.")
+        raise ValueError(T("erreur.rvb_requis"))
 
     if style.cell_mode == "half":
         if style.colored:

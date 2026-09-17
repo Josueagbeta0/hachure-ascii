@@ -2,6 +2,12 @@
 
 Rendre des images, des vidéos, une caméra en direct et des scènes 3D procédurales **en caractères, dans un terminal**.
 
+> **English** — `hachure` renders images, videos, live cameras and procedural 3D scenes as characters
+> in your terminal. **The interface speaks English too**: it follows your system language, or you can
+> force it with `hachure --lang en` or `HACHURE_LANG=en`. Run `hachure` with no arguments for a
+> keyboard-driven menu, or `hachure --lang en --help` for the full option list. This README is in
+> French; every command, message and help text below has an English counterpart built in.
+
 La *hachure* est la technique qui rend le ton et la forme par des traits directionnels. C'est
 littéralement ce que fait ce moteur : une rampe de luminosité pour le ton, et un tenseur de
 structure qui choisit `-`, `\`, `|` ou `/` par cellule pour la forme.
@@ -29,7 +35,8 @@ orientation du contour par cellule
 
 ## Sommaire
 
-[Le menu](#le-menu) · [Installation](#installation) · [En ligne de commande](#en-ligne-de-commande) ·
+[Le menu](#le-menu) · [Installation](#installation) · [Langue](#langue-de-linterface) ·
+[En ligne de commande](#en-ligne-de-commande) ·
 [Le mode caractère](#tirer-le-meilleur-du-mode-caractère) · [Image](#rendu-dimage) ·
 [Vidéo](#rendu-vidéo) · [Caméra](#capture-caméra) · [Enregistrement](#enregistrement) ·
 [Démos](#démos-procédurales) · [Couleurs](#couleurs) · [Performance](#notes-de-performance) ·
@@ -213,10 +220,42 @@ Un guide pas à pas — prérequis, vérification, premiers rendus, dépannage �
 
 ---
 
+## Langue de l'interface
+
+Tout ce que le programme affiche existe en français et en anglais : aide, menu, navigateur de
+fichiers, sorties de `doctor` et de `list`, et messages d'erreur.
+
+La langue est choisie dans cet ordre, le premier qui répond l'emporte :
+
+| Priorité | Source | Exemple |
+| --- | --- | --- |
+| 1 | l'option `--lang` | `hachure --lang en list` |
+| 2 | la variable `HACHURE_LANG` | `$env:HACHURE_LANG = "en"` |
+| 3 | la locale du système | `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`, puis la langue d'affichage de Windows |
+| 4 | l'anglais | si aucune source ci-dessus ne donne une langue gérée |
+
+`--lang auto` ignore `HACHURE_LANG` et redemande une détection. Une locale comme `fr_BE@euro` ou
+`French_France` est reconnue. Une locale non gérée — `de_DE`, `es_ES` — n'est jamais une erreur :
+la détection passe simplement à la source suivante, donc sous un Windows en français un
+`LANG=de_DE` donne du français, et de l'anglais partout ailleurs.
+
+```powershell
+hachure --lang en doctor      # ponctuellement
+$env:HACHURE_LANG = "en"      # pour la session
+```
+
+La langue est aussi celle du paquet importé comme bibliothèque : les exceptions levées par
+`hachure.media.image` ou `hachure.media.video` sont traduites de la même façon.
+
+Ajouter une langue tient en une colonne : `hachure/i18n.py` associe chaque clé à un couple
+`(français, anglais)`, et un test parcourt les sources pour vérifier qu'aucune clé n'est ni
+manquante ni morte.
+
 ## En ligne de commande
 
 ```powershell
 hachure                       # le menu interactif
+hachure --lang en             # le même menu, en anglais
 hachure list                  # tous les moteurs disponibles
 hachure doctor                # diagnostic
 
@@ -500,10 +539,16 @@ sont comparés sur de petits tableaux NumPy construits à la main.
 Ni linter ni formateur configuré. La CI lance la suite sur Python 3.10 et 3.14, puis vérifie que
 `hachure --version` et `hachure list` répondent.
 
-**Le code, les commentaires, la documentation et les noms de tests sont en français.** Deux
-exceptions, marquées par un commentaire à leur emplacement : les sous-chaînes comparées à la sortie
-de FFmpeg, et les messages internes d'argparse et d'unittest, qui passent par gettext sans catalogue
-français dans CPython.
+**Le code, les commentaires, la documentation et les noms de tests sont en français**, tandis que
+**l'interface est bilingue** : aucun texte affiché n'est écrit en dur, tout passe par `i18n.py`.
+
+Trois exceptions, marquées par un commentaire à leur emplacement : les sous-chaînes comparées à la
+sortie de FFmpeg ; les messages internes d'argparse et d'unittest, qui passent par gettext sans
+catalogue français dans CPython ; et deux `OSError` de `terminal.py`, attrapées sur place et jamais
+affichées.
+
+Un test qui vérifie un texte affiché doit fixer la langue explicitement — sinon il passe sur une
+machine française et échoue sur la CI, qui tourne en anglais.
 
 ### Architecture
 
@@ -528,6 +573,7 @@ renderers/*.py ──────────┘   (les démos émettent du text
 | `renderers/` | Démos autonomes enregistrées dans un dictionnaire `DEMOS`. Ajouter une démo = un module plus une entrée. |
 | `export.py` | Réanalyse les codes ANSI reçus et les repeint avec une police à chasse fixe, vers FFmpeg. |
 | `menu.py` | Le menu. Ne duplique aucune option : il compose une liste d'arguments et la passe à `main()`. |
+| `i18n.py` | Le catalogue bilingue et la détection de langue. Un dictionnaire, pas gettext : rien à compiler. |
 | `cli.py` | Argparse seulement. Les groupes d'options sont partagés entre sous-commandes. |
 
 NumPy et Pillow sont importés paresseusement, et les fonctions manipulant des tableaux reçoivent

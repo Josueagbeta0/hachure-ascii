@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from hachure.i18n import T
+
 # On passe par des percentiles plutôt que par les vrais minimum et maximum, pour
 # que quelques pixels isolés ne définissent pas toute la plage.
 DEFAULT_LOW_PERCENTILE = 2.0
@@ -48,9 +50,9 @@ class ToneMapper:
         inertia: float = DEFAULT_LEVEL_INERTIA,
     ) -> None:
         if not 0.0 <= low_percentile < high_percentile <= 100.0:
-            raise ValueError("Les percentiles doivent vérifier 0 <= bas < haut <= 100.")
+            raise ValueError(T("erreur.percentiles"))
         if not 0.0 < inertia <= 1.0:
-            raise ValueError("L'inertie des niveaux doit être comprise entre 0 et 1.")
+            raise ValueError(T("erreur.inertie"))
         self.gamma = gamma
         self.auto_levels = auto_levels
         self.low_percentile = low_percentile

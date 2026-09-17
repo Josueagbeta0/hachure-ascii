@@ -13,6 +13,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, BinaryIO, Protocol
 
+from hachure.i18n import T
 from hachure.render import RenderStyle, render_array
 from hachure.terminal import (
     FitMode,
@@ -75,9 +76,7 @@ def _load_numpy() -> Any:
     try:
         import numpy
     except ImportError as exc:
-        raise VideoRenderError(
-            "Le rendu vidéo exige NumPy. Installez d'abord les dépendances du projet."
-        ) from exc
+        raise VideoRenderError(T("erreur.video_numpy")) from exc
     return numpy
 
 
@@ -162,7 +161,7 @@ def get_video_dimensions(video: Path) -> tuple[int, int] | None:
 
 def file_source(video: Path) -> MediaSource:
     if not video.is_file():
-        raise VideoRenderError(f"Vidéo introuvable : {video}")
+        raise VideoRenderError(T("erreur.video_introuvable", chemin=video))
     return MediaSource(
         input_args=["-i", str(video)],
         label=video.name,
@@ -175,7 +174,7 @@ def file_source(video: Path) -> MediaSource:
 def list_camera_devices() -> list[str]:
     """Renvoie les noms de caméras que FFmpeg sait ouvrir sur cette plateforme."""
     if shutil.which("ffmpeg") is None:
-        raise VideoRenderError("FFmpeg est introuvable dans le PATH.")
+        raise VideoRenderError(T("erreur.ffmpeg_absent"))
     system = platform.system()
     if system != "Windows":
         return []
@@ -236,10 +235,7 @@ def camera_source(device: str | None = None, *, size: str | None = None) -> Medi
         if name is None:
             devices = list_camera_devices()
             if not devices:
-                raise VideoRenderError(
-                    "Aucune caméra DirectShow n'a été trouvée. "
-                    "Lancez « hachure camera --list » pour voir les périphériques disponibles."
-                )
+                raise VideoRenderError(T("erreur.camera_absente"))
             name = devices[0]
         arguments = ["-f", "dshow"]
         if size:
@@ -387,12 +383,21 @@ def _describe(
     cols: int,
     rows: int,
 ) -> None:
-    pixels = f"{style.pixel_cols(cols)} x {style.pixel_rows(rows)} pixels"
-    print(f"Source   : {source.label}")
-    print(f"Rendu    : {cols} x {rows} cellules ({pixels}) à {options.fps:g} IPS")
-    print(f"Cellules : {style.cell_mode}    Couleur : {style.color_depth}    Ajustement : {options.fit}")
-    print(f"Audio    : {'activé' if options.audio and source.has_audio else 'désactivé'}")
-    print("Démarrage... Appuyez sur Ctrl+C pour arrêter.")
+    pixels = f"{style.pixel_cols(cols)} x {style.pixel_rows(rows)} {T('lecture.pixels')}"
+    grille = f"{cols} x {rows} {T('doctor.cellules')}"
+    audio = T("lecture.active") if options.audio and source.has_audio else T("lecture.desactive")
+    # Les libellés sont alignés sur le plus long, qui diffère selon la langue.
+    largeur = max(len(T(c)) for c in
+                  ("lecture.source", "lecture.rendu", "lecture.cellules", "lecture.audio"))
+    print(f"{T('lecture.source').ljust(largeur)} : {source.label}")
+    print(f"{T('lecture.rendu').ljust(largeur)} : {grille} ({pixels}) — {options.fps:g} {T('lecture.ips')}")
+    print(
+        f"{T('lecture.cellules').ljust(largeur)} : {style.cell_mode}"
+        f"    {T('lecture.couleur')} : {style.color_depth}"
+        f"    {T('lecture.ajustement')} : {options.fit}"
+    )
+    print(f"{T('lecture.audio').ljust(largeur)} : {audio}")
+    print(T("lecture.demarrage"))
 
 
 def play_source(
@@ -405,12 +410,10 @@ def play_source(
 ) -> None:
     """Décode une source média et l'affiche dans le terminal jusqu'à sa fin."""
     if shutil.which("ffmpeg") is None:
-        raise VideoRenderError("FFmpeg est introuvable dans le PATH.")
+        raise VideoRenderError(T("erreur.ffmpeg_absent"))
     audio_wanted = options.audio and source.has_audio
     if audio_wanted and shutil.which("ffplay") is None:
-        raise VideoRenderError(
-            "FFplay est introuvable dans le PATH. Utilisez --no-audio pour continuer."
-        )
+        raise VideoRenderError(T("erreur.ffplay_absent"))
 
     np = _load_numpy()
     palette = style.palette()
@@ -463,7 +466,7 @@ def play_source(
                     bufsize=10**8,
                 )
                 if video_process.stdout is None:
-                    raise VideoRenderError("FFmpeg n'a pas fourni de flux vidéo.")
+                    raise VideoRenderError(T("erreur.flux_absent"))
 
                 segment_start = time.perf_counter()
                 segment_frames = 0
@@ -530,7 +533,7 @@ def play_source(
                             video_process.stderr.read().decode(errors="replace").strip()
                         )
                     raise VideoRenderError(
-                        decoder_error or "FFmpeg n'a pas pu décoder la source."
+                        decoder_error or T("erreur.decodage")
                     )
 
                 if not options.loop:
@@ -550,14 +553,14 @@ def play_source(
     except KeyboardInterrupt:
         interrupted = True
     except OSError as exc:
-        raise VideoRenderError(f"Impossible de démarrer la lecture du média : {exc}") from exc
+        raise VideoRenderError(T("erreur.lecture_demarrage", cause=exc)) from exc
     except subprocess.SubprocessError as exc:
-        raise VideoRenderError(f"Le processus média a échoué : {exc}") from exc
+        raise VideoRenderError(T("erreur.processus_media", cause=exc)) from exc
     finally:
         _stop_process(video_process)
         _stop_process(audio_process)
 
-    print("Lecture interrompue." if interrupted else "Lecture terminée.")
+    print(T("lecture.interrompue") if interrupted else T("lecture.terminee"))
 
 
 def play_video(
@@ -570,18 +573,11 @@ def play_video(
 ) -> None:
     """Lit un fichier vidéo. Conservé comme point d'entrée pratique pour les entrées fichier."""
     if shutil.which("ffmpeg") is None:
-        raise VideoRenderError("FFmpeg est introuvable dans le PATH.")
+        raise VideoRenderError(T("erreur.ffmpeg_absent"))
     source = file_source(video)
     if options.duration is not None and options.duration <= 0:
-        raise VideoRenderError("La durée doit être strictement positive.")
+        raise VideoRenderError(T("erreur.duree_positive"))
     play_source(source, options=options, style=style, sink=sink, tone=tone)
-
-
-_CAMERA_ACCESS_HINT = (
-    "La caméra est bien listée mais n'a pas pu être ouverte. Sous Windows, "
-    "autorisez les applications de bureau dans Paramètres > Confidentialité et "
-    "sécurité > Caméra, et fermez toute autre application qui l'utilise déjà."
-)
 
 
 def play_camera(
@@ -605,5 +601,5 @@ def play_camera(
     except VideoRenderError as exc:
         # Ces deux sous-chaînes proviennent de la sortie de FFmpeg : ne pas les traduire.
         if "I/O error" in str(exc) or "Could not find video device" in str(exc):
-            raise VideoRenderError(f"{exc}\n{_CAMERA_ACCESS_HINT}") from exc
+            raise VideoRenderError(f"{exc}\n{T('erreur.camera_acces')}") from exc
         raise

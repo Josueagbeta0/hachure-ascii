@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterable
 
+from hachure.i18n import T
+
 CHARSETS = {
     "classic": " .:-=+*#%@",
     "detailed": " .`^\\,:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
@@ -34,14 +36,14 @@ def get_charset(name: str = DEFAULT_CHARSET, *, invert: bool = False) -> str:
         ramp = CHARSETS[name]
     except KeyError as exc:
         choices = ", ".join(sorted(CHARSETS))
-        raise ValueError(f"Jeu de caractères '{name}' inconnu. Choix possibles : {choices}.") from exc
+        raise ValueError(T("erreur.charset_inconnu", nom=name, choix=choices)) from exc
     return ramp[::-1] if invert else ramp
 
 
 def brightness_to_index(brightness: float, ramp_length: int) -> int:
     """Convertit une luminosité de 0..255 en un index de rampe toujours valide."""
     if ramp_length < 1:
-        raise ValueError("Une rampe de caractères ne peut pas être vide.")
+        raise ValueError(T("erreur.rampe_vide"))
     value = max(0.0, min(255.0, float(brightness)))
     return int(value * (ramp_length - 1) / 255.0)
 
@@ -122,15 +124,15 @@ def build_ramp(
     répartie l'emporte.
     """
     if length < 2:
-        raise ValueError("Une rampe demande au moins deux caractères.")
+        raise ValueError(T("erreur.rampe_deux"))
     if not measurements:
-        raise ValueError("Aucune mesure de glyphe n'a été fournie.")
+        raise ValueError(T("erreur.mesures_absentes"))
 
     ordered = sorted(measurements.items(), key=lambda item: item[1][0])
     lightest = ordered[0][1][0]
     heaviest = ordered[-1][1][0]
     if heaviest <= lightest:
-        raise ValueError("La couverture des glyphes n'a pas varié ; la police est-elle à chasse fixe ?")
+        raise ValueError(T("erreur.couverture_plate"))
 
     span = heaviest - lightest
     # Les glyphes à cette distance de la cible sont considérés comme

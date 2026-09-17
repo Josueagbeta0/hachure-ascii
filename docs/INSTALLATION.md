@@ -6,9 +6,9 @@ Installer le projet, vérifier la chaîne de rendu et produire un premier rendu 
 > ouvrable directement dans un navigateur.
 
 **Sommaire** — [Pré-requis](#01--pré-requis) · [Installation](#02--installation) ·
-[Vérification](#03--vérification) · [Premiers rendus](#04--premiers-rendus) ·
-[Développement](#05--développement) · [Dépannage](#06--dépannage) ·
-[Options clés](#07--options-clés)
+[Vérification](#03--vérification) · [Langue](#04--langue) · [Premiers rendus](#05--premiers-rendus) ·
+[Développement](#06--développement) · [Dépannage](#07--dépannage) ·
+[Options clés](#08--options-clés)
 
 ---
 
@@ -129,7 +129,35 @@ camera) et cinq démos procédurales.
 
 ---
 
-## 04 · Premiers rendus
+## 04 · Langue
+
+L'interface existe en français et en anglais : aide, menu, navigateur, sorties de `doctor` et de
+`list`, messages d'erreur. La langue est choisie dans cet ordre, le premier qui répond gagne :
+
+| Priorité | Source |
+| --- | --- |
+| 1 | l'option `--lang fr` / `--lang en` |
+| 2 | la variable d'environnement `HACHURE_LANG` |
+| 3 | la locale : `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`, puis la langue d'affichage de Windows |
+| 4 | l'anglais, si aucune source ci-dessus ne donne une langue gérée |
+
+```powershell
+hachure --lang en doctor      # ponctuellement
+$env:HACHURE_LANG = "en"      # pour toute la session
+hachure --lang auto list      # ignore HACHURE_LANG et redétecte
+```
+
+Une locale non gérée n'est jamais une erreur : la détection passe à la source suivante. Sous un
+Windows en français, `LANG=de_DE` donne donc du français, et de l'anglais partout ailleurs.
+
+> **Ce que ça change pour les tests.** Un test qui vérifie un texte affiché doit fixer la langue,
+> sinon il passe en local et échoue sur la CI, qui tourne en anglais. Le catalogue vit dans
+> `hachure/i18n.py` : un dictionnaire de couples `(français, anglais)`, sans gettext ni fichier à
+> compiler.
+
+---
+
+## 05 · Premiers rendus
 
 <kbd>Ctrl</kbd>+<kbd>C</kbd> arrête proprement toute animation, vidéo ou caméra : le curseur et les
 couleurs du terminal sont restaurés dans tous les cas, y compris après une erreur.
@@ -278,19 +306,19 @@ redimensionnée.
 
 ---
 
-## 05 · Développement
+## 06 · Développement
 
 ### Lancer les tests
 
-197 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit de vrai fichier média :
+220 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit de vrai fichier média :
 les appels FFmpeg sont simulés, les touches du menu et les saisies clavier le sont aussi, et les
 rendus sont comparés sur de petits tableaux NumPy construits à la main.
 
 ```text
 > python -m unittest discover -s tests
-.....................................................................................................................................................................................................
+............................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 197 tests in 0.377s
+Ran 220 tests in 0.563s
 
 OK
 ```
@@ -327,7 +355,7 @@ même la construction du paquet.
 
 ---
 
-## 06 · Dépannage
+## 07 · Dépannage
 
 Les situations réellement rencontrées, dans l'ordre où elles se présentent.
 
@@ -380,7 +408,7 @@ pixels — c'est la seule option qui alourdit le décodage et pas seulement le r
 
 ---
 
-## 07 · Options clés
+## 08 · Options clés
 
 Les réglages qui changent vraiment le résultat. Tous valent pour `image`, `video` et `camera`,
 sauf `--smoothing`, qui n'a de sens que sur un flux et n'existe donc que pour `video` et `camera`.

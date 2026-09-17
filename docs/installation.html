@@ -508,10 +508,11 @@
       <a href="#prerequis"><span>01</span>Pré-requis</a>
       <a href="#installation"><span>02</span>Installation</a>
       <a href="#verification"><span>03</span>Vérification</a>
-      <a href="#rendus"><span>04</span>Premiers rendus</a>
-      <a href="#dev"><span>05</span>Développement</a>
-      <a href="#depannage"><span>06</span>Dépannage</a>
-      <a href="#reference"><span>07</span>Options clés</a>
+      <a href="#langue"><span>04</span>Langue</a>
+      <a href="#rendus"><span>05</span>Premiers rendus</a>
+      <a href="#dev"><span>06</span>Développement</a>
+      <a href="#depannage"><span>07</span>Dépannage</a>
+      <a href="#reference"><span>08</span>Options clés</a>
     </nav>
 
     <main>
@@ -686,8 +687,56 @@ codec stdout  utf-8</span></pre>
       <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
 
       <!-- 04 -->
+      <section id="langue">
+        <div class="sec-head"><span class="sec-num">04</span><h2>Langue</h2></div>
+        <p>L'interface existe en français et en anglais : aide, menu, navigateur, sorties de
+          <code>doctor</code> et de <code>list</code>, messages d'erreur. La langue est choisie dans
+          cet ordre, le premier qui répond gagne :</p>
+
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Priorité</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>l'option <code>--lang fr</code> / <code>--lang en</code></td></tr>
+              <tr><td>2</td><td>la variable d'environnement <code>HACHURE_LANG</code></td></tr>
+              <tr><td>3</td><td>la locale : <code>LANGUAGE</code>, <code>LC_ALL</code>,
+                <code>LC_MESSAGES</code>, <code>LANG</code>, puis la langue d'affichage de
+                Windows</td></tr>
+              <tr><td>4</td><td>l'anglais, si aucune source ci-dessus ne donne une langue gérée</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="shell">
+          <div class="shell-bar"><span>langue</span></div>
+          <pre><span class="c"># ponctuellement</span>
+<span class="p">PS&gt;</span> hachure --lang en doctor
+
+<span class="c"># pour toute la session</span>
+<span class="p">PS&gt;</span> $env:HACHURE_LANG = "en"
+
+<span class="c"># ignore HACHURE_LANG et redétecte</span>
+<span class="p">PS&gt;</span> hachure --lang auto list</pre>
+        </div>
+
+        <p>Une locale non gérée n'est jamais une erreur : la détection passe à la source
+          suivante. Sous un Windows en français, <code>LANG=de_DE</code> donne donc du français, et
+          de l'anglais partout ailleurs.</p>
+
+        <div class="note">
+          <span class="note-label">Ce que ça change pour les tests</span>
+          <p>Un test qui vérifie un texte affiché doit fixer la langue, sinon il passe en local et
+            échoue sur la CI, qui tourne en anglais. Le catalogue vit dans
+            <code>hachure/i18n.py</code> : un dictionnaire de couples
+            <code>(français, anglais)</code>, sans gettext ni fichier à compiler.</p>
+        </div>
+      </section>
+
+      <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
+
+      <!-- 05 -->
       <section id="rendus">
-        <div class="sec-head"><span class="sec-num">04</span><h2>Premiers rendus</h2></div>
+        <div class="sec-head"><span class="sec-num">05</span><h2>Premiers rendus</h2></div>
         <p><kbd>Ctrl</kbd>+<kbd>C</kbd> arrête proprement toute animation, vidéo ou caméra : le
           curseur et les couleurs du terminal sont restaurés dans tous les cas, y compris après une
           erreur.</p>
@@ -840,12 +889,12 @@ hachure … --width 160 --fit cover --edges --charset detailed --duration 30 …
 
       <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
 
-      <!-- 05 -->
+      <!-- 06 -->
       <section id="dev">
-        <div class="sec-head"><span class="sec-num">05</span><h2>Développement</h2></div>
+        <div class="sec-head"><span class="sec-num">06</span><h2>Développement</h2></div>
 
         <h3>Lancer les tests</h3>
-        <p class="tight">197 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit
+        <p class="tight">220 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit
           de vrai fichier média : les appels FFmpeg sont simulés, les touches du menu et les saisies
           clavier le sont aussi, et les rendus sont comparés sur de petits tableaux NumPy construits
           à la main.</p>
@@ -853,9 +902,9 @@ hachure … --width 160 --fit cover --edges --charset detailed --duration 30 …
         <div class="shell">
           <div class="shell-bar"><span>Sortie réelle de ce poste</span></div>
           <pre><span class="p">PS&gt;</span> python -m unittest discover -s tests
-<span class="o">.....................................................................................................................................................................................................
+<span class="o">............................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 197 tests in 0.377s
+Ran 220 tests in 0.563s
 
 OK</span></pre>
         </div>
@@ -901,9 +950,9 @@ OK</span></pre>
 
       <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
 
-      <!-- 06 -->
+      <!-- 07 -->
       <section id="depannage">
-        <div class="sec-head"><span class="sec-num">06</span><h2>Dépannage</h2></div>
+        <div class="sec-head"><span class="sec-num">07</span><h2>Dépannage</h2></div>
         <p>Les six situations réellement rencontrées, dans l'ordre où elles se présentent.</p>
 
         <h3><code>hachure</code> : commande introuvable</h3>
@@ -958,9 +1007,9 @@ OK</span></pre>
 
       <p class="ramp">. : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @ . : - = + * # % @</p>
 
-      <!-- 07 -->
+      <!-- 08 -->
       <section id="reference">
-        <div class="sec-head"><span class="sec-num">07</span><h2>Options clés</h2></div>
+        <div class="sec-head"><span class="sec-num">08</span><h2>Options clés</h2></div>
         <p>Les réglages qui changent vraiment le résultat. Tous valent pour <code>image</code>,
           <code>video</code> et <code>camera</code>, sauf <code>--smoothing</code>, qui n'a de sens
           que sur un flux et n'existe donc que pour <code>video</code> et <code>camera</code>.</p>

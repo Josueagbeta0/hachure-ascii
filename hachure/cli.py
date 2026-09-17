@@ -21,6 +21,7 @@ from hachure.charsets import (
 )
 from hachure.color import COLOR_DEPTHS, ColorDepth, detect_color_depth
 from hachure.export import ExportError, FrameRecorder, strip_ansi
+from hachure.i18n import LANGUES, T, definir_langue, langue, normaliser
 from hachure.media.image import (
     ImageRenderError,
     get_image_dimensions,
@@ -53,57 +54,65 @@ from hachure.tone import ToneMapper
 def _positive_int(value: str) -> int:
     parsed = int(value)
     if parsed <= 0:
-        raise argparse.ArgumentTypeError("doit être strictement positif")
+        raise argparse.ArgumentTypeError(T("validation.positif"))
     return parsed
 
 
 def _nonnegative_int(value: str) -> int:
     parsed = int(value)
     if parsed < 0:
-        raise argparse.ArgumentTypeError("doit être nul ou positif")
+        raise argparse.ArgumentTypeError(T("validation.nul_ou_positif"))
     return parsed
 
 
 def _positive_float(value: str) -> float:
     parsed = float(value)
     if not math.isfinite(parsed) or parsed <= 0:
-        raise argparse.ArgumentTypeError("doit être un nombre fini strictement positif")
+        raise argparse.ArgumentTypeError(T("validation.fini_positif"))
     return parsed
 
 
 def _nonnegative_float(value: str) -> float:
     parsed = float(value)
     if not math.isfinite(parsed) or parsed < 0:
-        raise argparse.ArgumentTypeError("doit être un nombre fini nul ou positif")
+        raise argparse.ArgumentTypeError(T("validation.fini_nul_ou_positif"))
     return parsed
 
 
 def _unit_float(value: str) -> float:
     parsed = float(value)
     if not 0 <= parsed <= 1:
-        raise argparse.ArgumentTypeError("doit être compris entre 0 et 1")
+        raise argparse.ArgumentTypeError(T("validation.entre_0_et_1"))
     return parsed
 
 
 def _char_aspect(value: str) -> float:
     parsed = float(value)
     if not math.isfinite(parsed) or not 0.1 <= parsed <= 2.0:
-        raise argparse.ArgumentTypeError("doit être compris entre 0.1 et 2.0")
+        raise argparse.ArgumentTypeError(T("validation.entre_01_et_2"))
     return parsed
 
 
 def _gamma(value: str) -> float:
     parsed = float(value)
     if not math.isfinite(parsed) or not 0.1 <= parsed <= 5.0:
-        raise argparse.ArgumentTypeError("doit être compris entre 0.1 et 5.0")
+        raise argparse.ArgumentTypeError(T("validation.entre_01_et_5"))
     return parsed
 
 
 def _audio_delay(value: str) -> float:
     parsed = float(value)
     if not -30 <= parsed <= 30:
-        raise argparse.ArgumentTypeError("doit être compris entre -30 et 30 secondes")
+        raise argparse.ArgumentTypeError(T("validation.decalage_audio"))
     return parsed
+
+
+def _langue(value: str) -> str:
+    """Accepte « fr », « en » ou « auto »."""
+    choisi = value.strip().lower()
+    if choisi == "auto" or normaliser(choisi):
+        return choisi
+    raise argparse.ArgumentTypeError(T("validation.langue"))
 
 
 def _add_style_options(parser: argparse.ArgumentParser, *, default_color: bool) -> None:
@@ -111,33 +120,33 @@ def _add_style_options(parser: argparse.ArgumentParser, *, default_color: bool) 
         "--charset",
         choices=sorted(CHARSETS),
         default=DEFAULT_CHARSET,
-        help="rampe luminosité-vers-caractère (défaut : %(default)s)",
+        help=T("aide.charset"),
     )
     parser.add_argument(
-        "--invert", action="store_true", help="inverse les caractères sombres et clairs"
+        "--invert", action="store_true", help=T("aide.invert")
     )
     parser.add_argument(
         "--cells",
         choices=CELL_MODES,
         default="char",
-        help="un pixel par cellule, ou deux pixels empilés par cellule (défaut : %(default)s)",
+        help=T("aide.cells"),
     )
     parser.add_argument(
         "--half",
         dest="cells",
         action="store_const",
         const="half",
-        help="raccourci de --cells half ; double la résolution verticale",
+        help=T("aide.half"),
     )
     parser.add_argument(
         "--color",
         dest="color",
         action="store_true",
         default=default_color,
-        help="active la sortie en couleur",
+        help=T("aide.color"),
     )
     parser.add_argument(
-        "--no-color", dest="color", action="store_false", help="force une sortie monochrome"
+        "--no-color", dest="color", action="store_false", help=T("aide.no_color")
     )
     parser.add_argument(
         "--mono", dest="color", action="store_false", help=argparse.SUPPRESS
@@ -146,38 +155,35 @@ def _add_style_options(parser: argparse.ArgumentParser, *, default_color: bool) 
         "--color-depth",
         choices=("auto", *COLOR_DEPTHS),
         default="auto",
-        help="court-circuite la détection de couleur du terminal (défaut : %(default)s)",
+        help=T("aide.color_depth"),
     )
     parser.add_argument(
         "--quant",
         type=_positive_int,
         default=4,
-        help="pas de quantification des couleurs, pour réduire la sortie ANSI (défaut : %(default)s)",
+        help=T("aide.quant"),
     )
     parser.add_argument(
         "--edges",
         action="store_true",
-        help="remplace le caractère de rampe par un glyphe de ligne là où un contour "
-        "traverse la cellule, ce qui rend les formes lisibles",
+        help=T("aide.edges"),
     )
     parser.add_argument(
         "--edge-strength",
         type=_unit_float,
         default=0.5,
-        help="force minimale d'un contour pour afficher un glyphe, de 0 à 1 "
-        "(défaut : %(default)s)",
+        help=T("aide.edge_strength"),
     )
     parser.add_argument(
         "--auto-levels",
         action="store_true",
-        help="étire chaque image sur toute la rampe, au lieu de la seule plage "
-        "que la source utilise",
+        help=T("aide.auto_levels"),
     )
     parser.add_argument(
         "--gamma",
         type=_gamma,
         default=1.0,
-        help="mise en forme des tons moyens ; au-dessus de 1 ça éclaircit (défaut : %(default)s)",
+        help=T("aide.gamma"),
     )
 
 
@@ -186,22 +192,21 @@ def _add_geometry_options(parser: argparse.ArgumentParser, *, default_width: int
         "--width",
         type=_positive_int,
         default=default_width,
-        help="largeur maximale en caractères (défaut : %(default)s)",
+        help=T("aide.width_max"),
     )
     parser.add_argument(
-        "--height", type=_positive_int, help="hauteur maximale en caractères"
+        "--height", type=_positive_int, help=T("aide.height_max")
     )
     parser.add_argument(
         "--fit",
         choices=FIT_MODES,
         default="contain",
-        help="encadre la source de bandes, ou la recadre pour remplir le terminal "
-        "(défaut : %(default)s)",
+        help=T("aide.fit"),
     )
     parser.add_argument(
         "--char-aspect",
         type=_char_aspect,
-        help="largeur d'une cellule divisée par sa hauteur, pour votre police (défaut : 0.5)",
+        help=T("aide.char_aspect"),
     )
 
 
@@ -210,16 +215,16 @@ def _add_record_options(parser: argparse.ArgumentParser) -> None:
         "--record",
         type=Path,
         metavar="PATH",
-        help="écrit ce qui est rendu dans un fichier .mp4 ou .gif",
+        help=T("aide.record"),
     )
     parser.add_argument(
-        "--font", type=Path, help=".ttf à chasse fixe utilisé à l'enregistrement"
+        "--font", type=Path, help=T("aide.font_record")
     )
     parser.add_argument(
         "--font-size",
         type=_positive_int,
         default=16,
-        help="taille de police utilisée à l'enregistrement (défaut : %(default)s)",
+        help=T("aide.font_size"),
     )
 
 
@@ -267,7 +272,7 @@ def _recorder(args: argparse.Namespace, fps: float) -> Iterator[FrameRecorder | 
     finally:
         recorder.close()
         if recorder.frames:
-            print(f"{recorder.frames} images enregistrées dans {recorder.destination}")
+            print(T("enreg.images", nombre=recorder.frames, chemin=recorder.destination))
 
 
 class _FrenchHelpFormatter(argparse.HelpFormatter):
@@ -277,7 +282,7 @@ class _FrenchHelpFormatter(argparse.HelpFormatter):
         # Tester None, pas la valeur de vérité : argparse appelle add_usage avec
         # un préfixe vide pour calculer le « prog » des sous-commandes.
         if prefix is None:
-            prefix = "utilisation : "
+            prefix = T("argparse.utilisation")
         super().add_usage(usage, actions, groups, prefix)
 
 
@@ -290,10 +295,10 @@ def _localize(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     avec ``add_help=False`` pour que ``-h`` soit déclaré ici, en premier, avec
     un texte traduit.
     """
-    parser._positionals.title = "arguments positionnels"
-    parser._optionals.title = "options"
+    parser._positionals.title = T("argparse.positionnels")
+    parser._optionals.title = T("argparse.options")
     parser.add_argument(
-        "-h", "--help", action="help", help="affiche ce message d'aide et quitte"
+        "-h", "--help", action="help", help=T("aide.aide")
     )
     return parser
 
@@ -310,7 +315,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = _localize(
         argparse.ArgumentParser(
             prog="hachure",
-            description="Rend images, vidéos, caméras et art 3D procédural dans un terminal.",
+            description=T("aide.programme"),
             add_help=False,
             formatter_class=_FrenchHelpFormatter,
         )
@@ -319,92 +324,99 @@ def build_parser() -> argparse.ArgumentParser:
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
-        help="affiche la version du programme et quitte",
+        help=T("aide.version"),
+    )
+    parser.add_argument(
+        "--lang",
+        type=_langue,
+        default=langue(),
+        choices=(*LANGUES, "auto"),
+        help=T("aide.langue"),
     )
     # Non obligatoire : « hachure » tout court ouvre le menu interactif.
     subparsers = parser.add_subparsers(dest="command")
 
     menu_parser = _subparser(
-        subparsers, "menu", help="ouvre le menu interactif (comportement par défaut)"
+        subparsers, "menu", help=T("aide.cmd_menu")
     )
     menu_parser.set_defaults(handler=_run_menu)
 
-    list_parser = _subparser(subparsers, "list", help="liste les moteurs de rendu disponibles")
+    list_parser = _subparser(subparsers, "list", help=T("aide.cmd_list"))
     list_parser.set_defaults(handler=_run_list)
 
     doctor_parser = _subparser(
-        subparsers, "doctor", help="vérifie les dépendances et les capacités du terminal"
+        subparsers, "doctor", help=T("aide.cmd_doctor")
     )
     doctor_parser.set_defaults(handler=_run_doctor)
 
     calibrate_parser = _subparser(
-        subparsers, "calibrate", help="construit une rampe de caractères mesurée sur une police"
+        subparsers, "calibrate", help=T("aide.cmd_calibrate")
     )
     calibrate_parser.add_argument(
-        "--font", type=Path, help=".ttf à chasse fixe à mesurer"
+        "--font", type=Path, help=T("aide.font_mesurer")
     )
     calibrate_parser.add_argument(
         "--length",
         type=_positive_int,
         default=12,
-        help="nombre de caractères que la rampe doit contenir (défaut : %(default)s)",
+        help=T("aide.length"),
     )
     calibrate_parser.add_argument(
         "--size",
         type=_positive_int,
         default=32,
-        help="taille en pixels à laquelle les glyphes sont mesurés (défaut : %(default)s)",
+        help=T("aide.size_mesure"),
     )
     calibrate_parser.set_defaults(handler=_run_calibrate)
 
-    image_parser = _subparser(subparsers, "image", help="convertit une image fixe en ASCII")
-    image_parser.add_argument("path", type=Path, help="chemin vers une image")
+    image_parser = _subparser(subparsers, "image", help=T("aide.cmd_image"))
+    image_parser.add_argument("path", type=Path, help=T("aide.chemin_image"))
     _add_geometry_options(image_parser, default_width=100)
     _add_style_options(image_parser, default_color=False)
     image_parser.add_argument(
-        "-o", "--output", type=Path, help="écrit le texte dans un fichier UTF-8"
+        "-o", "--output", type=Path, help=T("aide.output")
     )
     image_parser.set_defaults(handler=_run_image)
 
-    video_parser = _subparser(subparsers, "video", help="lit une vidéo en ASCII")
-    video_parser.add_argument("path", type=Path, help="chemin vers une vidéo")
+    video_parser = _subparser(subparsers, "video", help=T("aide.cmd_video"))
+    video_parser.add_argument("path", type=Path, help=T("aide.chemin_video"))
     _add_geometry_options(video_parser, default_width=160)
     _add_style_options(video_parser, default_color=False)
     _add_playback_options(video_parser)
     _add_record_options(video_parser)
     video_parser.add_argument(
-        "--loop", action="store_true", help="redémarre quand la vidéo se termine"
+        "--loop", action="store_true", help=T("aide.loop")
     )
     video_parser.add_argument(
         "--start",
         type=_nonnegative_float,
         default=0.0,
-        help="position de départ en secondes (défaut : %(default)s)",
+        help=T("aide.start"),
     )
     video_parser.add_argument(
-        "--duration", type=_positive_float, help="arrête après ce nombre de secondes"
+        "--duration", type=_positive_float, help=T("aide.duration")
     )
     video_parser.add_argument(
-        "--no-audio", action="store_true", help="désactive l'audio via FFplay"
+        "--no-audio", action="store_true", help=T("aide.no_audio")
     )
     video_parser.add_argument(
         "--audio-delay",
         type=_audio_delay,
         default=0.0,
-        help="décalage audio en secondes ; une valeur positive retarde l'audio",
+        help=T("aide.audio_delay"),
     )
     video_parser.set_defaults(handler=_run_video)
 
-    camera_parser = _subparser(subparsers, "camera", help="lit une caméra en direct en ASCII")
-    camera_parser.add_argument("--device", help="nom ou chemin de la caméra")
+    camera_parser = _subparser(subparsers, "camera", help=T("aide.cmd_camera"))
+    camera_parser.add_argument("--device", help=T("aide.device"))
     camera_parser.add_argument(
-        "--list", action="store_true", help="liste les caméras disponibles et quitte"
+        "--list", action="store_true", help=T("aide.list_cameras")
     )
     camera_parser.add_argument(
-        "--size", help="taille de capture demandée, par exemple 1280x720"
+        "--size", help=T("aide.size_capture")
     )
     camera_parser.add_argument(
-        "--duration", type=_positive_float, help="arrête après ce nombre de secondes"
+        "--duration", type=_positive_float, help=T("aide.duration")
     )
     _add_geometry_options(camera_parser, default_width=160)
     _add_style_options(camera_parser, default_color=True)
@@ -412,24 +424,24 @@ def build_parser() -> argparse.ArgumentParser:
     _add_record_options(camera_parser)
     camera_parser.set_defaults(handler=_run_camera)
 
-    demo_parser = _subparser(subparsers, "demo", help="lance un moteur de rendu procédural")
-    demo_parser.add_argument("name", choices=sorted(DEMOS), help="nom de la démo")
-    demo_parser.add_argument("--width", type=_positive_int, help="largeur en caractères")
-    demo_parser.add_argument("--height", type=_positive_int, help="hauteur en caractères")
+    demo_parser = _subparser(subparsers, "demo", help=T("aide.cmd_demo"))
+    demo_parser.add_argument("name", choices=sorted(DEMOS), help=T("aide.nom_demo"))
+    demo_parser.add_argument("--width", type=_positive_int, help=T("aide.width"))
+    demo_parser.add_argument("--height", type=_positive_int, help=T("aide.height"))
     demo_parser.add_argument(
         "--fps",
         type=_positive_float,
         default=30.0,
-        help="cadence de lecture visée (défaut : %(default)s)",
+        help=T("aide.fps"),
     )
     demo_parser.add_argument(
         "--charset",
         choices=sorted(CHARSETS),
         default=DEFAULT_CHARSET,
-        help="rampe luminosité-vers-caractère (défaut : %(default)s)",
+        help=T("aide.charset"),
     )
     demo_parser.add_argument(
-        "--invert", action="store_true", help="inverse les caractères sombres et clairs"
+        "--invert", action="store_true", help=T("aide.invert")
     )
     _add_record_options(demo_parser)
     demo_parser.set_defaults(handler=_run_demo)
@@ -444,28 +456,27 @@ def _add_playback_options(
         "--fps",
         type=_positive_float,
         default=default_fps,
-        help="cadence de lecture visée (défaut : %(default)s)",
+        help=T("aide.fps"),
     )
     parser.add_argument(
         "--smoothing",
         type=_unit_float,
         default=1.0,
-        help="lissage temporel : 1 est net, les valeurs plus basses ajoutent des traînées",
+        help=T("aide.smoothing"),
     )
     parser.add_argument(
         "--max-frame-skip",
         type=_nonnegative_int,
         default=5,
-        help="nombre maximal d'images consécutives abandonnées pour rattraper le retard (défaut : %(default)s)",
+        help=T("aide.max_frame_skip"),
     )
 
 
 def _run_list(_args: argparse.Namespace) -> int:
-    print("Moteurs de rendu d'entrée :")
-    print("  image      Images fixes, via Pillow")
-    print("  video      Fichiers vidéo, via FFmpeg")
-    print("  camera     Capture caméra en direct, via FFmpeg")
-    print("\nDémos procédurales :")
+    print(T("liste.entrees"))
+    for nom, cle in (("image", "liste.image"), ("video", "liste.video"), ("camera", "liste.camera")):
+        print(f"  {nom:<10} {T(cle)}")
+    print(f"\n{T('liste.demos')}")
     for demo in DEMOS.values():
         print(f"  {demo.name:<10} {demo.description}")
     return 0
@@ -474,7 +485,7 @@ def _run_list(_args: argparse.Namespace) -> int:
 def _tool_version(name: str) -> str:
     path = shutil.which(name)
     if path is None:
-        return "absent du PATH"
+        return T("doctor.hors_path")
     try:
         result = subprocess.run(
             [name, "-version"], capture_output=True, text=True, timeout=10, check=False
@@ -493,27 +504,31 @@ def _run_doctor(_args: argparse.Namespace) -> int:
     for module in ("numpy", "PIL"):
         try:
             imported = __import__(module)
-            version = getattr(imported, "__version__", "inconnue")
+            version = getattr(imported, "__version__", T("doctor.inconnu"))
             print(f"{module:<13} {version}")
         except ImportError:
-            print(f"{module:<13} ABSENT")
+            print(f"{module:<13} {T('doctor.absent')}")
 
     for tool in ("ffmpeg", "ffplay", "ffprobe"):
         print(f"{tool:<13} {_tool_version(tool)}")
 
-    print(f"terminal      {columns} x {rows} cellules")
-    print(f"profondeur    {detect_color_depth()}")
-    print(f"rapport cell. {default_char_aspect()}")
-    print(f"tty stdout    {sys.stdout.isatty()}")
-    print(f"codec stdout  {getattr(sys.stdout, 'encoding', 'inconnu')}")
+    # Les libellés du terminal changent de longueur selon la langue : on les
+    # aligne sur le plus long, et sur les 13 colonnes des lignes précédentes.
+    cles = ("doctor.terminal", "doctor.profondeur", "doctor.rapport", "doctor.tty", "doctor.codec")
+    largeur = max(13, *(len(T(cle)) for cle in cles))
+    valeurs = (
+        f"{columns} x {rows} {T('doctor.cellules')}",
+        detect_color_depth(),
+        default_char_aspect(),
+        sys.stdout.isatty(),
+        getattr(sys.stdout, "encoding", T("doctor.inconnu")),
+    )
+    for cle, valeur in zip(cles, valeurs):
+        print(f"{T(cle).ljust(largeur)} {valeur}")
 
     missing = [tool for tool in ("ffmpeg", "ffprobe") if shutil.which(tool) is None]
     if missing:
-        print(
-            "\nLa lecture vidéo a besoin de "
-            + ", ".join(missing)
-            + ". Installez FFmpeg puis rouvrez votre terminal."
-        )
+        print(T("doctor.video_manquante", outils=", ".join(missing)))
         return 1
     return 0
 
@@ -521,19 +536,15 @@ def _run_doctor(_args: argparse.Namespace) -> int:
 def _run_calibrate(args: argparse.Namespace) -> int:
     font = args.font.expanduser().resolve() if args.font else find_monospace_font()
     if font is None:
-        raise ValueError(
-            "Aucune police à chasse fixe n'a été trouvée. Passez --font avec un chemin vers un .ttf."
-        )
+        raise ValueError(T("erreur.police_absente"))
     if not font.is_file():
-        raise ValueError(f"Police introuvable : {font}")
+        raise ValueError(T("erreur.police_introuvable", chemin=font))
 
     ramp = calibrate(font, size=args.size, length=args.length)
-    print(f"Police : {font}")
-    print(f"Rampe  : {ramp!r}")
-    print(
-        "\nAjoutez-la à CHARSETS dans charsets.py pour l'utiliser avec --charset, "
-        "ou comparez-la aux rampes intégrées :"
-    )
+    largeur = max(len(T("calibrate.police")), len(T("calibrate.rampe")))
+    print(f"{T('calibrate.police').ljust(largeur)} : {font}")
+    print(f"{T('calibrate.rampe').ljust(largeur)} : {ramp!r}")
+    print(T("calibrate.conseil"))
     for name, existing in sorted(CHARSETS.items()):
         print(f"  {name:<10} {existing!r}")
     return 0
@@ -542,7 +553,7 @@ def _run_calibrate(args: argparse.Namespace) -> int:
 def _run_image(args: argparse.Namespace) -> int:
     path = args.path.expanduser().resolve()
     if not path.is_file():
-        raise ImageRenderError(f"Image introuvable : {path}")
+        raise ImageRenderError(T("erreur.image_introuvable", chemin=path))
     style = _build_style(args)
     source_width, source_height = get_image_dimensions(path)
     width, height = fit_source_size(
@@ -576,7 +587,7 @@ def _run_image(args: argparse.Namespace) -> int:
         destination.write_text(output + "\n", encoding="utf-8")
         plain = strip_ansi(output)
         columns = max((len(line) for line in plain.split("\n")), default=0)
-        print(f"Image ASCII {columns} x {height} écrite dans {destination}")
+        print(T("image.ecrite", colonnes=columns, lignes=height, chemin=destination))
     else:
         print(output)
     return 0
@@ -622,9 +633,9 @@ def _run_camera(args: argparse.Namespace) -> int:
     if args.list:
         devices = list_camera_devices()
         if not devices:
-            print("Aucune caméra signalée. Sous Linux et macOS, passez --device.")
+            print(T("camera.aucune"))
             return 1
-        print("Caméras :")
+        print(T("camera.titre"))
         for device in devices:
             print(f"  {device}")
         return 0
@@ -659,7 +670,7 @@ def _run_demo(args: argparse.Namespace) -> int:
         run_animation(
             lambda index, cols, rows: demo.render(index, cols, rows, ramp),
             fps=args.fps,
-            stopped_message=f"{demo.name.capitalize()} arrêté.",
+            stopped_message=T("arret.demo", nom=demo.name.capitalize()),
             size=current_size,
             on_frame=recorder.capture if recorder is not None else None,
         )
@@ -675,7 +686,27 @@ def _run_menu(_args: argparse.Namespace) -> int:
     return executer_menu(main)
 
 
+def _langue_demandee(argv: Sequence[str] | None) -> str | None:
+    """Cherche --lang dans argv avant que le parseur n'existe.
+
+    L'aide d'argparse est figée à la construction du parseur : la langue doit
+    donc être connue avant. On ne fait qu'un repérage grossier — le parseur
+    valide ensuite la valeur pour de bon.
+    """
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    for rang, argument in enumerate(arguments):
+        if argument == "--lang" and rang + 1 < len(arguments):
+            return arguments[rang + 1]
+        if argument.startswith("--lang="):
+            return argument.split("=", 1)[1]
+    return None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
+    demandee = _langue_demandee(argv)
+    if demandee is not None:
+        # « auto » redemande une détection ; definir_langue s'en charge sur None.
+        definir_langue(None if demandee.strip().lower() == "auto" else demandee)
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command is None:
@@ -689,7 +720,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ValueError,
         OSError,
     ) as exc:
-        parser.exit(2, f"erreur : {exc}\n")
+        parser.exit(2, f"{T('erreur.prefixe')}{exc}\n")
     return 2
 
 

@@ -1,3 +1,4 @@
+import contextlib
 import io
 import json
 import subprocess
@@ -20,7 +21,19 @@ from hachure.media.video import (
     play_video,
     read_frame,
 )
+from hachure.i18n import definir_langue, langue
 from hachure.render import RenderStyle
+
+
+@contextlib.contextmanager
+def langue_fixee(code: str):
+    """Fixe la langue le temps d'un test, puis restaure celle du processus."""
+    precedente = langue()
+    definir_langue(code)
+    try:
+        yield
+    finally:
+        definir_langue(precedente)
 
 
 def _probe_result(payload: dict) -> subprocess.CompletedProcess:
@@ -59,12 +72,20 @@ class UtilitairesVideoTests(unittest.TestCase):
             with mock.patch(
                 "hachure.media.video.shutil.which", return_value=None
             ):
-                with self.assertRaisesRegex(VideoRenderError, "FFmpeg est introuvable"):
-                    play_video(
-                        video,
-                        options=VideoOptions(audio=False),
-                        style=RenderStyle(" .#"),
-                    )
+                with langue_fixee("fr"):
+                    with self.assertRaisesRegex(VideoRenderError, "FFmpeg est introuvable"):
+                        play_video(
+                            video,
+                            options=VideoOptions(audio=False),
+                            style=RenderStyle(" .#"),
+                        )
+                with langue_fixee("en"):
+                    with self.assertRaisesRegex(VideoRenderError, "FFmpeg was not found"):
+                        play_video(
+                            video,
+                            options=VideoOptions(audio=False),
+                            style=RenderStyle(" .#"),
+                        )
 
 
 class DimensionsVideoTests(unittest.TestCase):

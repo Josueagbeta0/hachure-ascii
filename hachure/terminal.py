@@ -10,6 +10,8 @@ import time
 from collections.abc import Callable, Iterator
 from typing import Literal
 
+from hachure.i18n import T
+
 CHAR_ASPECT = 0.5
 
 CHAR_ASPECT_ENV = "HACHURE_CHAR_ASPECT"
@@ -55,10 +57,10 @@ def fit_source_size(
     la source est censée être recadrée en conséquence ; voir :func:`source_crop`.
     """
     if source_width <= 0 or source_height <= 0:
-        raise ValueError("Les dimensions de la source doivent être positives.")
+        raise ValueError(T("erreur.source_positive"))
     aspect = default_char_aspect() if char_aspect is None else char_aspect
     if aspect <= 0:
-        raise ValueError("La correction de rapport des caractères doit être positive.")
+        raise ValueError(T("erreur.rapport_positif"))
 
     term_cols, term_rows = available or terminal_size()
     cols = max(1, term_cols - 2)
@@ -97,9 +99,9 @@ def source_crop(
     bandes noires.
     """
     if source_width <= 0 or source_height <= 0:
-        raise ValueError("Les dimensions de la source doivent être positives.")
+        raise ValueError(T("erreur.source_positive"))
     if cols <= 0 or rows <= 0:
-        raise ValueError("Les dimensions de la grille doivent être positives.")
+        raise ValueError(T("erreur.grille_positive"))
     aspect = default_char_aspect() if char_aspect is None else char_aspect
 
     target_ratio = cols * aspect / rows
@@ -129,7 +131,7 @@ def fit_demo_size(
 ) -> tuple[int, int]:
     """Choisit une grille de caractères compatible avec le terminal pour une démo procédurale."""
     if height_ratio <= 0:
-        raise ValueError("Le rapport de hauteur doit être positif.")
+        raise ValueError(T("erreur.hauteur_positive"))
     term_cols, term_rows = available or terminal_size()
     cols = min(width or default_width, max(1, term_cols - 2))
     rows = height or max(1, round(cols * height_ratio))
@@ -146,6 +148,8 @@ def enable_windows_ansi() -> None:
     """Active le traitement de terminal virtuel sans lancer de shell."""
     if os.name != "nt":
         return
+    # Les deux OSError ci-dessous sont attrapées trois lignes plus bas et ne
+    # remontent jamais à l'utilisateur : elles restent hors catalogue.
     try:
         import ctypes
         from ctypes import wintypes
@@ -253,7 +257,7 @@ def run_animation(
     courantes de la grille.
     """
     if fps <= 0:
-        raise ValueError("Le nombre d'images par seconde doit être positif.")
+        raise ValueError(T("erreur.fps_positif"))
 
     frame_duration = 1.0 / fps
     next_frame_at = time.perf_counter()

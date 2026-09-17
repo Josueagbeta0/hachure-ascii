@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from hachure.i18n import T
 from hachure.render import RenderStyle, render_array
 from hachure.tone import ToneMapper
 
@@ -17,9 +18,7 @@ def _load_pillow() -> Any:
     try:
         from PIL import Image
     except ImportError as exc:
-        raise ImageRenderError(
-            "Le rendu d'image exige Pillow. Installez d'abord les dépendances du projet."
-        ) from exc
+        raise ImageRenderError(T("erreur.image_pillow")) from exc
     return Image
 
 
@@ -27,9 +26,7 @@ def _load_numpy() -> Any:
     try:
         import numpy
     except ImportError as exc:
-        raise ImageRenderError(
-            "Le rendu d'image exige NumPy. Installez d'abord les dépendances du projet."
-        ) from exc
+        raise ImageRenderError(T("erreur.image_numpy")) from exc
     return numpy
 
 
@@ -39,7 +36,7 @@ def get_image_dimensions(path: Path) -> tuple[int, int]:
         with Image.open(path) as image:
             return image.size
     except (OSError, ValueError) as exc:
-        raise ImageRenderError(f"Impossible d'ouvrir l'image '{path}' : {exc}") from exc
+        raise ImageRenderError(T("erreur.image_ouverture", chemin=path, cause=exc)) from exc
 
 
 def render_image(
@@ -60,7 +57,7 @@ def render_image(
     np = _load_numpy()
 
     if not path.is_file():
-        raise ImageRenderError(f"Image introuvable : {path}")
+        raise ImageRenderError(T("erreur.image_introuvable", chemin=path))
 
     target_cols = style.pixel_cols(width)
     target_rows = style.pixel_rows(height)
@@ -83,9 +80,9 @@ def render_image(
             resized = converted.resize((target_cols, target_rows), resampling)
             array = np.asarray(resized, dtype=np.float32)
     except (OSError, ValueError) as exc:
-        raise ImageRenderError(f"Impossible de rendre l'image '{path}' : {exc}") from exc
+        raise ImageRenderError(T("erreur.image_rendu", chemin=path, cause=exc)) from exc
 
     if style.colored and array.ndim != 3:
-        raise ImageRenderError(f"Impossible de lire les canaux de couleur de '{path}'.")
+        raise ImageRenderError(T("erreur.image_canaux", chemin=path))
 
     return render_array(array, style, np, tone=tone)

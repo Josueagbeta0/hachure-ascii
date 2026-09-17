@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from hachure.i18n import definir_langue, langue
 from hachure.menu import (
     EXTENSIONS_IMAGE,
     EXTENSIONS_POLICE,
@@ -54,6 +55,17 @@ def saisies(*lignes: str):
 
 
 @contextlib.contextmanager
+def langue_fixee(code: str):
+    """Fixe la langue le temps d'un test : les libellés en dépendent."""
+    precedente = langue()
+    definir_langue(code)
+    try:
+        yield
+    finally:
+        definir_langue(precedente)
+
+
+@contextlib.contextmanager
 def touches(*noms: str):
     """Simule un terminal interactif piloté par une séquence de touches."""
     suite = iter(noms)
@@ -94,7 +106,10 @@ class ChampsTests(unittest.TestCase):
         """Le menu ne doit jamais recopier les valeurs par défaut d'argparse."""
         choix = Choix("--width", "Largeur", ("", "80", "120"))
         self.assertEqual(choix.argv(), [])
-        self.assertEqual(choix.affichage(), "défaut")
+        with langue_fixee("fr"):
+            self.assertEqual(choix.affichage(), "défaut")
+        with langue_fixee("en"):
+            self.assertEqual(choix.affichage(), "default")
 
     def test_une_valeur_choisie_est_emise(self) -> None:
         choix = Choix("--width", "Largeur", ("", "80", "120"))
@@ -197,10 +212,13 @@ class ReglagesNumerotesTests(unittest.TestCase):
         )
 
     def test_le_mot_defaut_ramene_a_la_valeur_vide(self) -> None:
-        champs = [Choix("--width", "Largeur", ("", "64"), rang=1)]
-        with saisies("défaut"):
-            ecran_reglages("Titre", champs)
-        self.assertEqual(_argv_des_champs(champs), [])
+        """Le mot saisi est celui de la langue courante, pas un mot français figé."""
+        for code, mot in (("fr", "défaut"), ("en", "default")):
+            with self.subTest(langue=code):
+                champs = [Choix("--width", "Largeur", ("", "64"), rang=1)]
+                with langue_fixee(code), saisies(mot):
+                    ecran_reglages("Titre", champs)
+                self.assertEqual(_argv_des_champs(champs), [])
 
     def test_une_reponse_negative_laisse_la_bascule_inactive(self) -> None:
         champs = [Bascule("--color", "Couleur", actif=True)]
@@ -332,7 +350,7 @@ class NavigateurTests(unittest.TestCase):
         self.assertEqual((dossiers, fichiers), ([], []))
 
     def test_les_entrees_offrent_le_parent_et_l_annulation(self) -> None:
-        with self._arborescence() as base:
+        with self._arborescence() as base, langue_fixee("fr"):
             libelles = [
                 e.libelle
                 for e in _entrees_du_dossier(base, EXTENSIONS_IMAGE, dossier_seulement=False)
@@ -343,7 +361,7 @@ class NavigateurTests(unittest.TestCase):
             self.assertIn("[ annuler ]", libelles)
 
     def test_en_mode_dossier_les_fichiers_disparaissent(self) -> None:
-        with self._arborescence() as base:
+        with self._arborescence() as base, langue_fixee("fr"):
             libelles = [
                 e.libelle
                 for e in _entrees_du_dossier(base, None, dossier_seulement=True)

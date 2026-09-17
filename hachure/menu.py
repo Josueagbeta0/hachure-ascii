@@ -26,14 +26,12 @@ from typing import Callable, Sequence
 
 from hachure.charsets import CHARSETS, DEFAULT_CHARSET
 from hachure.color import detect_color_depth
+from hachure.i18n import T
 from hachure.render import CELL_MODES
 from hachure.renderers import DEMOS
 from hachure.terminal import FIT_MODES, terminal_size
 
 QUITTER = "quitter"
-
-_INVITE_TOUCHES = "↑↓ déplacer · Entrée valider · Échap revenir"
-_INVITE_REGLAGES = "↑↓ déplacer · Espace/←→ changer · Entrée ouvrir · Échap revenir"
 
 
 # --------------------------------------------------------------------------- #
@@ -195,7 +193,7 @@ def _dessiner_liste(
 
     sortie = [*lignes_titre, ""]
     if debut:
-        sortie.append(style.discret(f"  ↑ {debut} au-dessus"))
+        sortie.append(style.discret("  " + T("menu.au_dessus", nombre=debut)))
     for decalage, texte in enumerate(visibles):
         court = _raccourcir(texte, largeur)
         sortie.append(
@@ -203,7 +201,7 @@ def _dessiner_liste(
         )
     restant = len(rangs) - debut - len(visibles)
     if restant > 0:
-        sortie.append(style.discret(f"  ↓ {restant} en dessous"))
+        sortie.append(style.discret("  " + T("menu.en_dessous", nombre=restant)))
     sortie.append("")
     sortie += [style.discret(_raccourcir(ligne, largeur)) for ligne in bas]
     zone.dessiner(sortie)
@@ -229,7 +227,7 @@ def _selection_numerotee(titre: str, entrees: Sequence[Entree]) -> object | None
         suffixe = f" — {entree.detail}" if entree.detail else ""
         print(f"  {rang}. {entree.libelle}{suffixe}")
     while True:
-        print("Choix (vide pour revenir) :")
+        print(T("menu.choix"))
         try:
             saisie = _lire_ligne().strip()
         except EOFError:
@@ -238,7 +236,7 @@ def _selection_numerotee(titre: str, entrees: Sequence[Entree]) -> object | None
             return None
         if saisie.isdigit() and 1 <= int(saisie) <= len(entrees):
             return entrees[int(saisie) - 1].valeur
-        print(f"Entrez un nombre entre 1 et {len(entrees)}.")
+        print(T("menu.choix_invalide", nombre=len(entrees)))
 
 
 def selectionner(titre: str, entrees: Sequence[Entree]) -> object | None:
@@ -257,7 +255,7 @@ def selectionner(titre: str, entrees: Sequence[Entree]) -> object | None:
         for entree in entrees
     ]
     while True:
-        _dessiner_liste(zone, style, titre, rangs, curseur, [_INVITE_TOUCHES])
+        _dessiner_liste(zone, style, titre, rangs, curseur, [T("menu.touches")])
 
         touche = lire_touche()
         if touche == "haut":
@@ -276,9 +274,6 @@ def selectionner(titre: str, entrees: Sequence[Entree]) -> object | None:
 # Champs de réglage
 # --------------------------------------------------------------------------- #
 
-_DEFAUT = "défaut"
-
-
 @dataclass
 class Bascule:
     """Un drapeau sans valeur, présent ou absent."""
@@ -288,7 +283,7 @@ class Bascule:
     actif: bool = False
 
     def affichage(self) -> str:
-        return "oui" if self.actif else "non"
+        return T("menu.oui") if self.actif else T("menu.non")
 
     def modifier(self, sens: int) -> None:
         self.actif = not self.actif
@@ -314,7 +309,7 @@ class Choix:
     rang: int = 0
 
     def affichage(self) -> str:
-        return self.valeurs[self.rang] or _DEFAUT
+        return self.valeurs[self.rang] or T("menu.defaut")
 
     def modifier(self, sens: int) -> None:
         self.rang = (self.rang + sens) % len(self.valeurs)
@@ -323,7 +318,7 @@ class Choix:
         """Ouvre la liste complète, plus lisible qu'un défilement à l'aveugle."""
         choisi = selectionner(
             self.libelle,
-            [Entree(valeur or _DEFAUT, rang) for rang, valeur in enumerate(self.valeurs)],
+            [Entree(valeur or T("menu.defaut"), rang) for rang, valeur in enumerate(self.valeurs)],
         )
         if choisi is not None:
             self.rang = int(choisi)
@@ -343,7 +338,7 @@ class Fichier:
     valeur: str = ""
 
     def affichage(self) -> str:
-        return Path(self.valeur).name if self.valeur else "aucun"
+        return Path(self.valeur).name if self.valeur else T("menu.aucun")
 
     def modifier(self, sens: int) -> None:
         return None
@@ -373,7 +368,7 @@ class Sortie:
     valeur: str = ""
 
     def affichage(self) -> str:
-        return Path(self.valeur).name if self.valeur else "aucun"
+        return Path(self.valeur).name if self.valeur else T("menu.aucun")
 
     def modifier(self, sens: int) -> None:
         return None
@@ -438,7 +433,7 @@ def _nettoyer_chemin(brut: str) -> str:
 def demander_chemin(invite: str) -> str | None:
     """Demande un chemin existant. Renvoie None si l'on renonce."""
     while True:
-        brut = _demander_ligne(f"{invite} (vide pour revenir)")
+        brut = _demander_ligne(f"{invite} ({T('menu.vide_pour_revenir')})")
         if brut is None:
             return None
         chemin = _nettoyer_chemin(brut)
@@ -446,7 +441,7 @@ def demander_chemin(invite: str) -> str | None:
             return None
         if Path(chemin).expanduser().is_file():
             return chemin
-        print(f"Fichier introuvable : {chemin}")
+        print(T("menu.fichier_introuvable", chemin=chemin))
 
 
 # --------------------------------------------------------------------------- #
@@ -540,16 +535,16 @@ def _entrees_du_dossier(
 
     entrees: list[Entree] = []
     if dossier_seulement:
-        entrees.append(Entree("[ choisir ce dossier ]", (_ICI, dossier)))
+        entrees.append(Entree(T("menu.choisir_dossier"), (_ICI, dossier)))
     if dossier.parent != dossier:
-        entrees.append(Entree("..", (_PARENT, dossier.parent), "dossier parent"))
+        entrees.append(Entree("..", (_PARENT, dossier.parent), T("menu.dossier_parent")))
 
     tronque = False
     for chemin in dossiers:
         if len(entrees) >= _MAX_ENTREES:
             tronque = True
             break
-        entrees.append(Entree(f"{chemin.name}/", (_DOSSIER, chemin), "dossier"))
+        entrees.append(Entree(f"{chemin.name}/", (_DOSSIER, chemin), T("menu.dossier")))
     for chemin in fichiers:
         if len(entrees) >= _MAX_ENTREES:
             tronque = True
@@ -557,14 +552,14 @@ def _entrees_du_dossier(
         entrees.append(Entree(chemin.name, (_FICHIER, chemin), _taille_lisible(chemin)))
 
     if not dossiers and not fichiers:
-        entrees.append(Entree("( rien à afficher ici )", (_DOSSIER, dossier)))
+        entrees.append(Entree(T("menu.rien_ici"), (_DOSSIER, dossier)))
     if tronque:
         entrees.append(
-            Entree(f"( liste limitée à {_MAX_ENTREES} entrées )", (_DOSSIER, dossier))
+            Entree(T("menu.liste_limitee", nombre=_MAX_ENTREES), (_DOSSIER, dossier))
         )
     if _disques():
-        entrees.append(Entree("[ changer de disque ]", (_DISQUE, None)))
-    entrees.append(Entree("[ annuler ]", (QUITTER, None)))
+        entrees.append(Entree(T("menu.changer_disque"), (_DISQUE, None)))
+    entrees.append(Entree(T("menu.annuler"), (QUITTER, None)))
     return entrees
 
 
@@ -621,8 +616,8 @@ def parcourir(
             return cible
         elif genre == _DISQUE:
             racines = [Entree(str(racine), (_DOSSIER, racine)) for racine in _disques()]
-            racines.append(Entree("[ annuler ]", (QUITTER, None)))
-            disque = selectionner("Quel disque ?", racines)
+            racines.append(Entree(T("menu.annuler"), (QUITTER, None)))
+            disque = selectionner(T("menu.quel_disque"), racines)
             if disque is not None and disque[0] == _DOSSIER:
                 dossier = disque[1]
 
@@ -653,15 +648,15 @@ def noms_proposes(base: str, extensions: Sequence[str]) -> list[str]:
 def choisir_destination(invite: str, base: str, extensions: Sequence[str]) -> str | None:
     """Compose un chemin de sortie : un dossier parcouru, puis un nom proposé."""
     if not interactif():
-        brut = _demander_ligne(f"{invite} (vide pour aucun)")
+        brut = _demander_ligne(f"{invite} ({T('menu.vide_pour_aucun')})")
         return None if brut is None else _nettoyer_chemin(brut)
 
-    dossier = parcourir(f"{invite} — où enregistrer ?", dossier_seulement=True)
+    dossier = parcourir(T("menu.ou_enregistrer", libelle=invite), dossier_seulement=True)
     if dossier is None:
         return None
     entrees = [Entree(nom, nom) for nom in noms_proposes(base, extensions)]
-    entrees.append(Entree("[ annuler ]", QUITTER))
-    nom = selectionner(f"Nom du fichier\n{dossier}", entrees)
+    entrees.append(Entree(T("menu.annuler"), QUITTER))
+    nom = selectionner(f"{T('menu.nom_fichier')}\n{dossier}", entrees)
     if nom is None or nom == QUITTER:
         return None
     return str(dossier / str(nom))
@@ -677,17 +672,17 @@ _ANNULER = "annuler"
 
 def _ecran_reglages_numerote(titre: str, champs: Sequence[Champ]) -> bool:
     """Variante sans terminal : chaque champ est demandé une fois, dans l'ordre."""
-    print(f"\n{titre} — réglages (Entrée pour garder la valeur affichée)")
+    print(f"\n{titre} — {T('menu.reglages')}")
     for champ in champs:
         if isinstance(champ, (Fichier, Sortie)):
             champ.ouvrir()
         elif isinstance(champ, Bascule):
-            reponse = _demander_ligne(f"{champ.libelle} ? [o/N]")
+            reponse = _demander_ligne(f"{champ.libelle} ? [{T('menu.oui')[0]}/{T('menu.non')[0].upper()}]")
             if reponse is None:
                 return False
-            champ.actif = reponse.strip().lower() in ("o", "oui", "y", "yes")
+            champ.actif = reponse.strip().lower() in ("o", "oui", "y", "yes", "true", "1")
         else:
-            possibles = [valeur or _DEFAUT for valeur in champ.valeurs]
+            possibles = [valeur or T("menu.defaut") for valeur in champ.valeurs]
             reponse = _demander_ligne(
                 f"{champ.libelle} {possibles} [{champ.affichage()}]"
             )
@@ -696,7 +691,7 @@ def _ecran_reglages_numerote(titre: str, champs: Sequence[Champ]) -> bool:
             choisi = reponse.strip()
             if choisi in champ.valeurs:
                 champ.rang = champ.valeurs.index(choisi)
-            elif choisi == _DEFAUT and "" in champ.valeurs:
+            elif choisi == T("menu.defaut") and "" in champ.valeurs:
                 champ.rang = champ.valeurs.index("")
     return True
 
@@ -717,10 +712,10 @@ def ecran_reglages(titre: str, champs: Sequence[Champ]) -> bool:
         rangs = [
             f"{champ.libelle.ljust(largeur)}  {champ.affichage()}" for champ in champs
         ]
-        rangs += ["Lancer le rendu", "Annuler"]
+        rangs += [T("menu.lancer"), T("menu.annuler_ligne")]
         apercu = " ".join(_argv_des_champs(champs))
         _dessiner_liste(
-            zone, style, titre, rangs, curseur, [f"hachure … {apercu}", _INVITE_REGLAGES]
+            zone, style, titre, rangs, curseur, [f"hachure … {apercu}", T("menu.touches_reglages")]
         )
 
         touche = lire_touche()
@@ -761,20 +756,20 @@ _TAILLES = ("", "16", "24", "32", "48", "64")
 
 def _champs_style(*, couleur: bool) -> list[Champ]:
     return [
-        Bascule("--color", "Couleur", actif=couleur),
-        Bascule("--edges", "Contours (--edges)", actif=True),
-        Bascule("--auto-levels", "Niveaux automatiques", actif=True),
-        Choix("--charset", "Jeu de caractères", _CHARSETS, _CHARSET_DEFAUT),
-        Choix("--cells", "Géométrie de cellule", CELL_MODES),
-        Bascule("--invert", "Inverser la rampe"),
+        Bascule("--color", T("champ.color"), actif=couleur),
+        Bascule("--edges", T("champ.edges"), actif=True),
+        Bascule("--auto-levels", T("champ.auto_levels"), actif=True),
+        Choix("--charset", T("champ.charset"), _CHARSETS, _CHARSET_DEFAUT),
+        Choix("--cells", T("champ.cells"), CELL_MODES),
+        Bascule("--invert", T("champ.invert")),
     ]
 
 
 def _champs_geometrie() -> list[Champ]:
     return [
-        Choix("--width", "Largeur maximale", _LARGEURS),
-        Choix("--height", "Hauteur maximale", _HAUTEURS),
-        Choix("--fit", "Ajustement", FIT_MODES),
+        Choix("--width", T("champ.width_max"), _LARGEURS),
+        Choix("--height", T("champ.height_max"), _HAUTEURS),
+        Choix("--fit", T("champ.fit"), FIT_MODES),
     ]
 
 
@@ -782,7 +777,7 @@ def champs_image(base: str = "rendu") -> list[Champ]:
     return [
         *_champs_geometrie(),
         *_champs_style(couleur=False),
-        Sortie("--output", "Écrire dans un fichier texte", (".txt",), base),
+        Sortie("--output", T("champ.output"), (".txt",), base),
     ]
 
 
@@ -790,12 +785,12 @@ def champs_video(base: str = "rendu") -> list[Champ]:
     return [
         *_champs_geometrie(),
         *_champs_style(couleur=True),
-        Choix("--fps", "Images par seconde", _FPS),
-        Bascule("--no-audio", "Couper le son"),
-        Bascule("--loop", "Lire en boucle"),
-        Choix("--start", "Départ en secondes", _DEPARTS),
-        Choix("--duration", "Durée en secondes", _DUREES),
-        Sortie("--record", "Enregistrer le rendu", (".mp4", ".gif"), base),
+        Choix("--fps", T("champ.fps"), _FPS),
+        Bascule("--no-audio", T("champ.no_audio")),
+        Bascule("--loop", T("champ.loop")),
+        Choix("--start", T("champ.start"), _DEPARTS),
+        Choix("--duration", T("champ.duration"), _DUREES),
+        Sortie("--record", T("champ.record"), (".mp4", ".gif"), base),
     ]
 
 
@@ -803,28 +798,28 @@ def champs_camera() -> list[Champ]:
     return [
         *_champs_geometrie(),
         *_champs_style(couleur=True),
-        Choix("--fps", "Images par seconde", _FPS),
-        Choix("--duration", "Durée en secondes", _DUREES),
-        Sortie("--record", "Enregistrer le rendu", (".mp4", ".gif"), "camera"),
+        Choix("--fps", T("champ.fps"), _FPS),
+        Choix("--duration", T("champ.duration"), _DUREES),
+        Sortie("--record", T("champ.record"), (".mp4", ".gif"), "camera"),
     ]
 
 
 def champs_demo(base: str = "demo") -> list[Champ]:
     return [
-        Choix("--width", "Largeur", _LARGEURS),
-        Choix("--height", "Hauteur", _HAUTEURS),
-        Choix("--fps", "Images par seconde", _FPS),
-        Choix("--charset", "Jeu de caractères", _CHARSETS, _CHARSET_DEFAUT),
-        Bascule("--invert", "Inverser la rampe"),
-        Sortie("--record", "Enregistrer le rendu", (".gif", ".mp4"), base),
+        Choix("--width", T("champ.width"), _LARGEURS),
+        Choix("--height", T("champ.height"), _HAUTEURS),
+        Choix("--fps", T("champ.fps"), _FPS),
+        Choix("--charset", T("champ.charset"), _CHARSETS, _CHARSET_DEFAUT),
+        Bascule("--invert", T("champ.invert")),
+        Sortie("--record", T("champ.record"), (".gif", ".mp4"), base),
     ]
 
 
 def champs_calibrate() -> list[Champ]:
     return [
-        Fichier("--font", "Police à mesurer", EXTENSIONS_POLICE),
-        Choix("--length", "Longueur de la rampe", _LONGUEURS),
-        Choix("--size", "Taille de mesure en pixels", _TAILLES),
+        Fichier("--font", T("champ.font"), EXTENSIONS_POLICE),
+        Choix("--length", T("champ.length"), _LONGUEURS),
+        Choix("--size", T("champ.size"), _TAILLES),
     ]
 
 
@@ -844,35 +839,35 @@ def _composer_media(
         return None
     # Le nom de la source sert de base aux noms d'enregistrement proposés.
     reglages = champs(Path(chemin).stem or "rendu")
-    if not ecran_reglages(f"Réglages · {commande}", reglages):
+    if not ecran_reglages(f"{T('menu.reglages')} · {commande}", reglages):
         return None
     return [commande, chemin, *_argv_des_champs(reglages)]
 
 
 def _composer_image() -> list[str] | None:
-    return _composer_media("image", "Quelle image ?", EXTENSIONS_IMAGE, champs_image)
+    return _composer_media("image", T("menu.quelle_image"), EXTENSIONS_IMAGE, champs_image)
 
 
 def _composer_video() -> list[str] | None:
-    return _composer_media("video", "Quelle vidéo ?", EXTENSIONS_VIDEO, champs_video)
+    return _composer_media("video", T("menu.quelle_video"), EXTENSIONS_VIDEO, champs_video)
 
 
 def _composer_camera() -> list[str] | None:
     from hachure.media.video import VideoRenderError, list_camera_devices
 
-    entrees = [Entree("Caméra par défaut", "")]
+    entrees = [Entree(T("menu.camera_defaut"), "")]
     try:
         entrees += [Entree(nom, nom) for nom in list_camera_devices()]
     except VideoRenderError as exc:
-        print(f"Liste des caméras indisponible : {exc}")
-    entrees.append(Entree("[ annuler ]", QUITTER))
+        print(T("menu.cameras_indisponibles", cause=exc))
+    entrees.append(Entree(T("menu.annuler"), QUITTER))
 
-    choix = selectionner("Quelle caméra ?", entrees)
+    choix = selectionner(T("menu.quelle_camera"), entrees)
     if choix is None or choix == QUITTER:
         return None
 
     champs = champs_camera()
-    if not ecran_reglages("Réglages · camera", champs):
+    if not ecran_reglages(f"{T('menu.reglages')} · camera", champs):
         return None
     peripherique = ["--device", str(choix)] if choix else []
     return ["camera", *peripherique, *_argv_des_champs(champs)]
@@ -880,21 +875,21 @@ def _composer_camera() -> list[str] | None:
 
 def _composer_demo() -> list[str] | None:
     entrees = [Entree(demo.name, demo.name, demo.description) for demo in DEMOS.values()]
-    entrees.append(Entree("[ annuler ]", QUITTER))
+    entrees.append(Entree(T("menu.annuler"), QUITTER))
 
-    choix = selectionner("Quelle démo ?", entrees)
+    choix = selectionner(T("menu.quelle_demo"), entrees)
     if choix is None or choix == QUITTER:
         return None
 
     champs = champs_demo(str(choix))
-    if not ecran_reglages(f"Réglages · demo {choix}", champs):
+    if not ecran_reglages(f"{T('menu.reglages')} · demo {choix}", champs):
         return None
     return ["demo", str(choix), *_argv_des_champs(champs)]
 
 
 def _composer_calibrate() -> list[str] | None:
     champs = champs_calibrate()
-    if not ecran_reglages("Réglages · calibrate", champs):
+    if not ecran_reglages(f"{T('menu.reglages')} · calibrate", champs):
         return None
     return ["calibrate", *_argv_des_champs(champs)]
 
@@ -903,18 +898,18 @@ def _composer_calibrate() -> list[str] | None:
 # Boucle principale
 # --------------------------------------------------------------------------- #
 
-# Chaque entrée compose une ligne de commande ; None signifie « revenir ici ».
+# Des clés de catalogue, pas du texte : la table est bâtie à l'import, donc avant
+# que la langue ne soit connue. Chaque entrée compose une ligne de commande ;
+# None signifie « revenir au menu ».
 _ACTIONS: tuple[tuple[str, str, Callable[[], list[str] | None]], ...] = (
-    ("Image fixe", "convertir une photo en caractères", _composer_image),
-    ("Vidéo", "lire un fichier vidéo", _composer_video),
-    ("Caméra", "diffuser une caméra en direct", _composer_camera),
-    ("Démo procédurale", "cube, sphère, tore, planète, trou noir", _composer_demo),
-    ("Diagnostic", "dépendances et capacités du terminal", lambda: ["doctor"]),
-    ("Moteurs disponibles", "ce que le projet sait rendre", lambda: ["list"]),
-    ("Calibrer une rampe", "mesurer une police à chasse fixe", _composer_calibrate),
+    ("menu.image", "menu.image_detail", _composer_image),
+    ("menu.video", "menu.video_detail", _composer_video),
+    ("menu.camera", "menu.camera_detail", _composer_camera),
+    ("menu.demo", "menu.demo_detail", _composer_demo),
+    ("menu.doctor", "menu.doctor_detail", lambda: ["doctor"]),
+    ("menu.moteurs", "menu.moteurs_detail", lambda: ["list"]),
+    ("menu.calibrer", "menu.calibrer_detail", _composer_calibrate),
 )
-
-_BANNIERE = "hachure · rendu d'images, de vidéos et de 3D en caractères"
 
 
 def executer_menu(lanceur: Callable[[Sequence[str]], int]) -> int:
@@ -924,14 +919,14 @@ def executer_menu(lanceur: Callable[[Sequence[str]], int]) -> int:
     qu'un échec reste visible après avoir quitté le menu.
     """
     entrees = [
-        Entree(libelle, rang, detail)
-        for rang, (libelle, detail, _) in enumerate(_ACTIONS)
+        Entree(T(cle_libelle), rang, T(cle_detail))
+        for rang, (cle_libelle, cle_detail, _) in enumerate(_ACTIONS)
     ]
-    entrees.append(Entree("Quitter", QUITTER))
+    entrees.append(Entree(T("menu.quitter"), QUITTER))
 
     code = 0
     while True:
-        choix = selectionner(_BANNIERE, entrees)
+        choix = selectionner(T("menu.banniere"), entrees)
         if choix is None or choix == QUITTER:
             return code
 

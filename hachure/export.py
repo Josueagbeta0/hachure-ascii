@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator
 
+from hachure.i18n import T
+
 RGB = tuple[int, int, int]
 
 DEFAULT_FOREGROUND: RGB = (200, 200, 200)
@@ -120,7 +122,7 @@ def _load_font(size: int) -> Any:
     try:
         from PIL import ImageFont
     except ImportError as exc:
-        raise ExportError("L'enregistrement exige Pillow.") from exc
+        raise ExportError(T("erreur.enreg_pillow")) from exc
 
     for candidate in _FONT_CANDIDATES:
         path = Path(candidate)
@@ -129,10 +131,7 @@ def _load_font(size: int) -> Any:
                 return ImageFont.truetype(str(path), size)
             except OSError:
                 continue
-    raise ExportError(
-        "Aucune police à chasse fixe n'a été trouvée pour l'enregistrement. "
-        "Installez DejaVu Sans Mono ou passez --font avec un chemin vers un .ttf."
-    )
+    raise ExportError(T("erreur.enreg_police"))
 
 
 class FrameRecorder:
@@ -148,11 +147,11 @@ class FrameRecorder:
         background: RGB = DEFAULT_BACKGROUND,
     ) -> None:
         if shutil.which("ffmpeg") is None:
-            raise ExportError("L'enregistrement exige FFmpeg dans le PATH.")
+            raise ExportError(T("erreur.enreg_ffmpeg"))
         try:
             from PIL import Image, ImageDraw, ImageFont
         except ImportError as exc:
-            raise ExportError("L'enregistrement exige Pillow.") from exc
+            raise ExportError(T("erreur.enreg_pillow")) from exc
 
         self._image_module = Image
         self._draw_module = ImageDraw
@@ -166,11 +165,11 @@ class FrameRecorder:
 
         if font_path is not None:
             if not font_path.is_file():
-                raise ExportError(f"Police introuvable : {font_path}")
+                raise ExportError(T("erreur.police_introuvable", chemin=font_path))
             try:
                 self._font = ImageFont.truetype(str(font_path), font_size)
             except OSError as exc:
-                raise ExportError(f"Impossible de charger la police '{font_path}' : {exc}") from exc
+                raise ExportError(T("erreur.police_chargement", chemin=font_path, cause=exc)) from exc
         else:
             self._font = _load_font(font_size)
 
@@ -273,7 +272,7 @@ class FrameRecorder:
             self._process.stdin.write(image.tobytes())
         except (BrokenPipeError, OSError) as exc:
             self._closed = True
-            raise ExportError(f"L'enregistrement s'est interrompu de façon inattendue : {exc}") from exc
+            raise ExportError(T("erreur.enreg_interrompu", cause=exc)) from exc
         self._frames += 1
 
     def close(self) -> None:
@@ -295,7 +294,7 @@ class FrameRecorder:
             details = ""
             if self._process.stderr is not None:
                 details = self._process.stderr.read().decode(errors="replace").strip()
-            raise ExportError(details or "FFmpeg n'a pas pu écrire l'enregistrement.")
+            raise ExportError(details or T("erreur.enreg_ecriture"))
 
     def __enter__(self) -> "FrameRecorder":
         return self
