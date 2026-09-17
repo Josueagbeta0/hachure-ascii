@@ -1,5 +1,5 @@
 numpy>=1.24
 Pillow>=10.0
 
-# External system dependency for video playback:
-# FFmpeg, FFplay, and FFprobe must be available on PATH.
+# Dépendance système externe, pour la lecture vidéo :
+# FFmpeg, FFplay et FFprobe doivent être présents dans le PATH.
