@@ -371,8 +371,26 @@ class NavigateurTests(unittest.TestCase):
             self.assertNotIn("photo.png", libelles)
 
     def test_la_taille_des_fichiers_est_lisible(self) -> None:
+        """L'unité suit la langue : « Ko » en français, « KB » en anglais."""
         with self._arborescence() as base:
-            self.assertEqual(_taille_lisible(base / "photo.png"), "2.0 Ko")
+            for code, attendu in (("fr", "2.0 Ko"), ("en", "2.0 KB")):
+                with self.subTest(langue=code), langue_fixee(code):
+                    self.assertEqual(_taille_lisible(base / "photo.png"), attendu)
+
+    def test_chaque_palier_de_taille_a_son_unite(self) -> None:
+        """La taille est simulée : écrire un fichier de 2 Go pour un test serait absurde."""
+        paliers = (
+            (512, "512 o", "512 B"),
+            (4096, "4.0 Ko", "4.0 KB"),
+            (3 * 1024**2, "3.0 Mo", "3.0 MB"),
+            (2 * 1024**3, "2.0 Go", "2.0 GB"),
+        )
+        for octets, en_fr, en_en in paliers:
+            faux = mock.Mock()
+            faux.stat.return_value = mock.Mock(st_size=octets)
+            for code, attendu in (("fr", en_fr), ("en", en_en)):
+                with self.subTest(octets=octets, langue=code), langue_fixee(code):
+                    self.assertEqual(_taille_lisible(faux), attendu)
 
     def test_une_taille_illisible_ne_leve_pas(self) -> None:
         self.assertEqual(_taille_lisible(Path("absent-xyz.png")), "?")

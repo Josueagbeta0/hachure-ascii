@@ -532,7 +532,7 @@ python -m pytest tests/test_render.py -k half
 python -m unittest tests.test_render.RenduMonochromeTests
 ```
 
-197 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit de vrai fichier média : les
+223 tests, moins de trois secondes. Aucun n'ouvre de vrai terminal ni ne lit de vrai fichier média : les
 appels FFmpeg sont simulés, les touches du menu et les saisies clavier le sont aussi, et les rendus
 sont comparés sur de petits tableaux NumPy construits à la main.
 

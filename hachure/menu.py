@@ -475,9 +475,12 @@ def _taille_lisible(chemin: Path) -> str:
         octets = float(chemin.stat().st_size)
     except OSError:
         return "?"
-    for unite in ("o", "Ko", "Mo", "Go"):
-        if octets < 1024.0 or unite == "Go":
-            return f"{octets:.0f} {unite}" if unite == "o" else f"{octets:.1f} {unite}"
+    cles = ("taille.octet", "taille.kilo", "taille.mega", "taille.giga")
+    for cle in cles:
+        if octets < 1024.0 or cle == cles[-1]:
+            # Pas de décimale sur les octets : « 512.0 B » n'apporte rien.
+            arrondi = f"{octets:.0f}" if cle == cles[0] else f"{octets:.1f}"
+            return f"{arrondi} {T(cle)}"
         octets /= 1024.0
     return "?"
 
@@ -672,7 +675,7 @@ _ANNULER = "annuler"
 
 def _ecran_reglages_numerote(titre: str, champs: Sequence[Champ]) -> bool:
     """Variante sans terminal : chaque champ est demandé une fois, dans l'ordre."""
-    print(f"\n{titre} — {T('menu.reglages')}")
+    print(f"\n{titre} — {T('menu.garder_valeur')}")
     for champ in champs:
         if isinstance(champ, (Fichier, Sortie)):
             champ.ouvrir()
@@ -696,8 +699,14 @@ def _ecran_reglages_numerote(titre: str, champs: Sequence[Champ]) -> bool:
     return True
 
 
-def ecran_reglages(titre: str, champs: Sequence[Champ]) -> bool:
-    """Laisse ajuster les champs. Renvoie True s'il faut lancer le rendu."""
+def ecran_reglages(
+    titre: str, champs: Sequence[Champ], *, cle_action: str = "menu.lancer"
+) -> bool:
+    """Laisse ajuster les champs. Renvoie True s'il faut lancer la commande.
+
+    ``cle_action`` nomme la ligne de validation : toutes les commandes rendent
+    quelque chose, sauf ``calibrate``, qui mesure une police.
+    """
     if not interactif():
         return _ecran_reglages_numerote(titre, champs)
 
@@ -712,7 +721,7 @@ def ecran_reglages(titre: str, champs: Sequence[Champ]) -> bool:
         rangs = [
             f"{champ.libelle.ljust(largeur)}  {champ.affichage()}" for champ in champs
         ]
-        rangs += [T("menu.lancer"), T("menu.annuler_ligne")]
+        rangs += [T(cle_action), T("menu.annuler_ligne")]
         apercu = " ".join(_argv_des_champs(champs))
         _dessiner_liste(
             zone, style, titre, rangs, curseur, [f"hachure … {apercu}", T("menu.touches_reglages")]
@@ -889,7 +898,9 @@ def _composer_demo() -> list[str] | None:
 
 def _composer_calibrate() -> list[str] | None:
     champs = champs_calibrate()
-    if not ecran_reglages(f"{T('menu.reglages')} · calibrate", champs):
+    if not ecran_reglages(
+        f"{T('menu.reglages')} · calibrate", champs, cle_action="menu.mesurer"
+    ):
         return None
     return ["calibrate", *_argv_des_champs(champs)]
 

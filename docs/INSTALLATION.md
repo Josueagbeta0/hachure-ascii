@@ -310,15 +310,15 @@ redimensionnée.
 
 ### Lancer les tests
 
-220 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit de vrai fichier média :
+223 tests, moins d'une seconde. Aucun n'ouvre de vrai terminal ni ne lit de vrai fichier média :
 les appels FFmpeg sont simulés, les touches du menu et les saisies clavier le sont aussi, et les
 rendus sont comparés sur de petits tableaux NumPy construits à la main.
 
 ```text
 > python -m unittest discover -s tests
-............................................................................................................................................................................................................................
+...............................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 220 tests in 0.563s
+Ran 223 tests in 2.128s
 
 OK
 ```

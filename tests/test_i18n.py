@@ -1,7 +1,9 @@
 import ast
 import contextlib
 import glob
+import io
 import re
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -119,6 +121,97 @@ class ClesUtiliseesTests(unittest.TestCase):
 
     def test_le_catalogue_ne_garde_pas_de_cle_morte(self) -> None:
         self.assertEqual(set(CATALOGUE) - cles_citees(), set())
+
+
+class FuitesDansLeMenuTests(unittest.TestCase):
+    """Aucun texte français ne doit apparaître dans un écran rendu en anglais.
+
+    Le balayage est construit depuis le catalogue, pas depuis une liste de mots
+    écrite à la main : c'est ce qui permet d'attraper un oubli auquel on n'aurait
+    pas pensé — les unités de taille de fichier, par exemple.
+    """
+
+    def _francais_interdit(self) -> dict[str, str]:
+        return {
+            fr: cle
+            for cle, (fr, en) in CATALOGUE.items()
+            if fr != en and len(fr) >= 4 and "{" not in fr
+        }
+
+    def _fuites(self, sortie: str) -> list[str]:
+        # Bornes de mot : « Diagnostic » est une sous-chaîne de « Diagnostics »,
+        # qui est bien la traduction anglaise et non une fuite.
+        trouves = set()
+        for fr, cle in self._francais_interdit().items():
+            motif = r"(?<![^\W\d_])" + re.escape(fr) + r"(?![^\W\d_])"
+            if re.search(motif, sortie):
+                trouves.add(f"{cle} ({fr!r})")
+        return sorted(trouves)
+
+    def _rendre(self, appel, touches_simulees) -> str:
+        from hachure import menu
+
+        suite = iter(touches_simulees)
+        tampon = io.StringIO()
+        with mock.patch("hachure.menu.interactif", return_value=True):
+            with mock.patch("hachure.menu.lire_touche", lambda: next(suite, "echap")):
+                with contextlib.redirect_stdout(tampon):
+                    try:
+                        appel()
+                    except StopIteration:
+                        pass
+        return re.sub(r"\[[0-9;]*[A-Za-z]", "", tampon.getvalue())
+
+    def test_aucun_ecran_anglais_ne_laisse_passer_de_francais(self) -> None:
+        from hachure import menu
+
+        with tempfile.TemporaryDirectory() as dossier:
+            base = Path(dossier)
+            (base / "clips").mkdir()
+            (base / "film.mp4").write_bytes(b"x" * 4096)
+
+            ecrans = {
+                "menu": (lambda: menu.executer_menu(lambda argv: 0), ["echap"]),
+                "navigateur": (
+                    lambda: menu.parcourir("W?", extensions=menu.EXTENSIONS_VIDEO, depart=base),
+                    ["echap"],
+                ),
+                "navigateur_dossier": (
+                    lambda: menu.parcourir("W?", dossier_seulement=True, depart=base),
+                    ["echap"],
+                ),
+                "reglages_video": (
+                    lambda: menu.ecran_reglages("S", menu.champs_video("f")), ["echap"]
+                ),
+                "reglages_image": (
+                    lambda: menu.ecran_reglages("S", menu.champs_image("f")), ["echap"]
+                ),
+                "reglages_camera": (
+                    lambda: menu.ecran_reglages("S", menu.champs_camera()), ["echap"]
+                ),
+                "reglages_demo": (
+                    lambda: menu.ecran_reglages("S", menu.champs_demo("cube")), ["echap"]
+                ),
+                "calibrate": (menu._composer_calibrate, ["echap"]),
+                "choix_demo": (menu._composer_demo, ["echap"]),
+            }
+            with langue_fixee("en"):
+                for nom, (appel, touches_simulees) in ecrans.items():
+                    with self.subTest(ecran=nom):
+                        fuites = self._fuites(self._rendre(appel, touches_simulees))
+                        self.assertEqual(fuites, [])
+
+    def test_la_destination_ne_laisse_pas_passer_de_francais(self) -> None:
+        from hachure import menu
+
+        with tempfile.TemporaryDirectory() as dossier:
+            base = Path(dossier)
+            with langue_fixee("en"), mock.patch("hachure.menu._depart", return_value=base):
+                sortie = self._rendre(
+                    lambda: menu.choisir_destination("Record", "clip", (".mp4",)),
+                    ["entree", "entree"],
+                )
+            self.assertEqual(self._fuites(sortie), [])
 
 
 class RenduTests(unittest.TestCase):
